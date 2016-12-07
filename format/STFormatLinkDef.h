@@ -23,6 +23,7 @@
 #pragma link C++ class STVertex+;
 #pragma link C++ class STRecoHeader+;
 #pragma link C++ class STMCRecoMatching+;
+#pragma link C++ class STParticle+;
 
 #pragma link C++ class STSlimPad+;
 #pragma link C++ class std::vector<Short_t>+;

@@ -41,6 +41,7 @@ STHelixTrack.cc
 STVertex.cc
 STRecoHeader.cc
 STMCRecoMatching.cc
+STParticle.cc
 )
 
 CHANGE_FILE_EXTENSION(*.cc *.hh HEADERS "${SRCS}")
