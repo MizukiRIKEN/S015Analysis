@@ -163,7 +163,7 @@ class STTrackCandidate : public TObject {
 
     Double_t fRiemanndEdx;
     Double_t fChi2;
-    Int_t fNDF;
+    Int_t    fNDF;
 
     Double_t fPVal;
 

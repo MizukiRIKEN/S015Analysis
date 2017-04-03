@@ -42,6 +42,10 @@ public:
   Int_t    GetLinearPID()                {return flnPID;}
 
 
+  Double_t GetRapidity()                 {return fRapidity;}
+  Double_t GetEtotal()                   {return fEtotal;}
+  
+
   void     SetRotatedMomentum(TVector3 value)   {fRotatedMomentum = value;}
   TVector3 GetRotatedMomentum()                 {return fRotatedMomentum;}
 
@@ -74,15 +78,14 @@ public:
 
  
 
-  Int_t GetBestTrackFlag()
+  void   SetBestTrackFlag()
   {
     if(fVatTarget && fVZatTarget && fVBDCCor && fBDCCor && fTargetXY && fBeamonTarget)
       fgoodtrack = 1;
     else 
       fgoodtrack = 0;
-
-    return fgoodtrack;
   }
+  Int_t GetBestTrackFlag()                     {return fgoodtrack;}
 
 
   void  SetGotoKATANAFlag(Int_t value)          {fgotoKatana     = value;}
@@ -90,11 +93,11 @@ public:
   void  SetGotoKYOTOFlag(Int_t value)           {fgotoKyoto      = value;}
   Int_t SetGotoKYOTOFlag()                      {return fgotoKyoto;}
 
-  void SetPhi(Double_t value)        {fphi  = value;}
-  Double_t GetPhi()                  {return fphi;}
+  void     SetPhi(Double_t value)        {fphi  = value;}
+  Double_t GetPhi()                      {return fphi;}
 
-  void SetRotatedPhi(Double_t value) {frphi = value;}
-  Double_t GetRotatedPhi()           {return frphi;}
+  void     SetRotatedPhi(Double_t value) {frphi = value;}
+  Double_t GetRotatedPhi()               {return frphi;}
 
   STTrack  *GetTrack(){return fTrack;}
 
@@ -117,7 +120,8 @@ private:
   Double_t frphi;
   Int_t    flnPID;
   Double_t flnPIDval;
-
+  Double_t fRapidity;
+  Double_t fEtotal;
 
   //flags
   Int_t    fBeamonTarget; //flag for beam tracked by BDC goes on the target
