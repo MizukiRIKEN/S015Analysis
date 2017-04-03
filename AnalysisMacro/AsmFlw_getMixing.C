@@ -91,6 +91,8 @@ void AsmFlw_getMixing(Int_t nmax = -1)
       if( bMix ) aPart1 = GetMixedTrack(&mixEvt); // Get a track randomly
       else       aPart1 = (STParticle*) aParticleArray -> At(nLoop);
       
+
+      // update to new version on 3 April.
       TVector3 pp(aPart1->GetMomentum().X(),
 		  aPart1->GetMomentum().Y(),
 		  aPart1->GetMomentum().Z());
