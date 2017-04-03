@@ -2,8 +2,8 @@
 #include "KyotoRoot/STTriggerArray.hh"
 
 
-//Int_t irun = 2900;
-Int_t irun = 2331;
+Int_t irun = 2900;
+//Int_t irun = 2331;
 //Int_t irun=3023;
 //Int_t irun=3023;
 
@@ -35,11 +35,11 @@ Double_t ty_top  = 10.;
 Double_t ty_btm  = -10.;
 
 // KATANA offset
-Double_t KATANA_frame_OffSet     = -1041.+ 25;
+Double_t KATANA_frame_OffSet     = -1041.+ 30;  // should be 30.
 Double_t KATANA_paddle_Width     =   100.; 
 Double_t KATANA_paddle_Height    =   380.; 
 Double_t KATANA_paddle_Right[12] = {35,135,235,335,435,535,635,855,956,1057,1156,1256};
-Double_t KATANA_Max_Dist = 100.; //55.;
+Double_t KATANA_Max_Dist = 55.;
 
 //set run2334
 Double_t beamVx_offset = -17.54;
@@ -74,7 +74,8 @@ TString SetOutputFileName(TString &sRun)
   TString sdeb = "";
   if(debug)  sdeb = ".s";
 
-  TString foutname = "../data/run"+sRun+"_asm4.v1.03.d100x25c"+sdeb+".root";
+  //  TString foutname = "../data/run"+sRun+"_asm4.v1.04"+sdeb+".root";
+  TString foutname = "../data/run"+sRun+"_asm4.v1.03"+sdeb+".root";
   
   return foutname;
 }
@@ -105,7 +106,8 @@ void setDataDirectory(TString &rootdir)
       rootdir = "/cache/scr/spirit/mizuki/SpiRITROOT/macros/recoData/";
 
   else if(irun >= 2331 && irun <= 3039) {  
-    rootdir = "/data/spdaq01/recoData/v1.03+20160411.2016runs/rootfiles/";
+    // rootdir = "/data/spdaq01/recoData/20161219/NoCorrection/rootfiles/";
+        rootdir = "/data/spdaq01/recoData/v1.03+20160411.2016runs/rootfiles/";
   }
   else {
     rootdir = "/cache/scr/spirit/mizuki/SpiRITROOT/macros/recoData/";

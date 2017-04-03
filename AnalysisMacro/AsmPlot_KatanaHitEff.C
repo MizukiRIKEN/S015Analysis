@@ -4,12 +4,14 @@ void Open()
 
 void AsmPlot_KatanaHitEff()
 {
-  Int_t iRun = 2331;
+  Int_t iRun = 2900;
+  //  Int_t iRun = 2331;
   TString pRun = Form("%d",iRun);
 
   auto fChain = new TChain("tpc");  
-  fChain -> Add(Form("../data/run%d_asm5.v1.03.root",iRun));
-  //  fChain -> Add(Form("../data/run%d_asm4.v1.03.d55x25c.root",iRun));
+  //  fChain -> Add(Form("../data/run%d_asm4.v1.04.root",iRun));
+  //  fChain -> Add(Form("../data/run%d_asm5.v1.03.root",iRun));
+  fChain -> Add(Form("../data/run%d_asm4.v1.03.d55x30c.root",iRun));
 
   gROOT->Macro("AsmPlot_TCut.C");
 
@@ -59,6 +61,7 @@ void AsmPlot_KatanaHitEff()
   auto c1 = new TCanvas("c1","c1",1000,45,1000,800);
   auto c2 = new TCanvas("c2","c2",0,100,800,600);
   auto c3 = new TCanvas("c3","c3",1000,100,800,600);
+  auto c4 = new TCanvas("c4","c4",1000,100,800,600);
   
   c1->Divide(3,4);
   // c1->SetTopMargin(0.035f);
@@ -67,6 +70,7 @@ void AsmPlot_KatanaHitEff()
 
   c2->Divide(1,2);
   c3->Divide(1,2);
+  c4->Divide(1,2);
 
 
   TString h1name = "Katana hit pattern";
@@ -76,17 +80,16 @@ void AsmPlot_KatanaHitEff()
   auto h2a= new TH1D("h2a","Track hit on KATANA (All)",140,-1050,350);   
   auto h2b= new TH1D("h2b","Track hit on KATANA (found)",140,-1050,350);   
 
+  auto h4a = new TH2D("h4a","track X-Y on KATANA ",150,-1050,350,100,-450,0);
+  auto h4b = new TH2D("h4b","track X-Y on KATANA (found)",150,-1050,350,100,-450,0);
+  auto h4c = new TH2D("h4c","track X-Y on KATANA (not found)",150,-1050,350,100,-450,0);
 
-  auto h4a = new TH2D("h4a","track X-Y on KATANA ",150,-1050,350,100,-400,0);
-  auto h4b = new TH2D("h4b","track X-Y on KATANA (found)",150,-1050,350,100,-400,0);
-  auto h4c = new TH2D("h4c","track X-Y on KATANA (not found)",150,-1050,350,100,-400,0);
+  auto h3  = new TH2D("h3","dx on KATANA ",26,-1050,350,100,-200,200);
 
-  auto h3 = new TH2D("h3","dx on KATANA ",26,-1050,350,100,-200,200);
+  auto h5  = new TH2D("h5","track X-Y on KATANA",150,-1050,350,100,-400,0);
 
-  auto h5 = new TH2D("h5","track X-Y on KATANA",150,-1050,350,100,-400,0);
-
-  auto n1 = new TH2D("n1","Number of hits in total;# of track; Katana Mult",25,0,25,20,0,25);
-  auto n2 = new TH2D("n2","Number of hits event by event",25,0,25,20,0,25);
+  auto n1  = new TH2D("n1","Number of hits in total;# of track; Katana Mult",25,0,25,20,0,25);
+  auto n2  = new TH2D("n2","Number of hits event by event",25,0,25,20,0,25);
 
 
   TH1D *hkn[12];
@@ -210,6 +213,14 @@ void AsmPlot_KatanaHitEff()
     }
     c1->Update();
 
+    
+    c4->cd(1);
+    h4a->Draw("colz");
+
+    c4->cd(2);
+    h2b->Draw();
+
+    c4->Update();
 
 
     

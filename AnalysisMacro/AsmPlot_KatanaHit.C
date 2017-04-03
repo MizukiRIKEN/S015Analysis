@@ -1,7 +1,8 @@
 {
   Int_t iRun = 2900;
   //  TFile *_file0 = TFile::Open(Form("../data/run%d_asm3.v1.03.root",iRun));
-  TFile *_file0 = TFile::Open(Form("../data/run%d_asm4.v1.03.d55x25c.root",iRun));
+  //  TFile *_file0 = TFile::Open(Form("../data/run%d_asm4.v1.03.d55x25c.root",iRun));
+  TFile *_file0 = TFile::Open(Form("../data/run%d_asm4.v1.04.root",iRun));
   TString pRun = Form("%d",iRun);
 
   gROOT->Macro("AsmPlot_TCut.C");

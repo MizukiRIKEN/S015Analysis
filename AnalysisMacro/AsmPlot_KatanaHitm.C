@@ -5,7 +5,8 @@ void AsmPlot_KatanaHitm()
 
   auto fChain = new TChain("tpc");  
   //  fChain -> Add(Form("../data/run%d_asm4.v1.03.root",iRun));
-  fChain -> Add(Form("../data/run%d_asm4.v1.03.d55x25c.root",iRun));
+  //  fChain -> Add(Form("../data/run%d_asm4.v1.03.d55x25c.root",iRun));
+  fChain -> Add(Form("../data/run%d_asm4.v1.04.root",iRun));
 
   gROOT->Macro("AsmPlot_TCut.C");
 

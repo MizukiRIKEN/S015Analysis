@@ -1,15 +1,29 @@
-#define ASSEMBLE_FLWV1_CXX
-
-
-Int_t irun = 2900;
-//Int_t irun=3023;                                                                                           
-
-
-Bool_t BigRIPS  = kTRUE;
-Bool_t KyotoArry= kFALSE;
-Bool_t KATANA   = kFALSE;
-
 #include "Assemble_flwv1.h"
+//----------------------------------------------------------------------
+// Macro: Assemble_flwv1.C
+//  (c) Mizuki Kurata-Nishimura
+//   2017 Mar. 14 
+//----------------------------------------
+// Assemble TPC reconstructed data, Kyoto,  Katana, and BigRIPS root
+//----------------------------------------------------------------------
+void Setup()
+{
+  sRun = gSystem -> Getenv("RUN");
+  sVer = gSystem -> Getenv("VER");
+
+  if( sRun=="" || sVer=="") {
+    cout << "Plase type " << endl;
+    cout << "$ RUN=#### VER=# root Assemble_flwv1.C" << endl;
+    exit(0);
+  }
+
+  iRun = atoi(sRun);
+
+
+  BigRIPS  = kTRUE;  //kFALSE;
+  KyotoArry= kTRUE;
+  KATANA   = kFALSE; //kTRUE;
+}
 
 void Assemble_flwv1(Int_t nevt = -1)
 {
@@ -21,9 +35,12 @@ void Assemble_flwv1(Int_t nevt = -1)
   //   found on file: ../beam1807.root
   //////////////////////////////////////////////////////////
 
+  Setup();
 
   //Reset ROOT and connect tree file
   gROOT->Reset();
+
+
 
   //----- Beam PID ------------------------
   BeamPID();
@@ -36,29 +53,37 @@ void Assemble_flwv1(Int_t nevt = -1)
   if(nEvtTPC == 0) return;
 
   //----- BigRIPS data --------------------
-  SetBigRIPS();
   Long64_t nEvents = 0;
-  if(ribfChain) nEvents = ribfChain->GetEntries();
-  cout << "Number of events in RIDF: " << nEvents << endl;
-
+  if(BigRIPS) {
+    SetBigRIPS();
+    if( ribfChain) nEvents = ribfChain->GetEntries();
+    cout << "Number of events in RIDF: " << nEvents << endl;
+  }
   //----- KATANA Array --------------------  
   Long64_t nEvtKTN = 0;
   if(KATANA)   {
-    SetKATANARoot();
+    SetKATANARoot_bt();
     nEvtKTN = kChain -> GetEntries();
     cout << "Number of events in KATANA: " << nEvtKTN << endl;
   }
   //----- Kyoto Array ---------------------
   Long64_t nEvtKyt = 0;
   if(KyotoArry) {
-    SetKyotoArray();   
+
+    KyotoRoot = 0;
+    if( !SetKyotoMultiplicity()) {
+      KyotoRoot = 1;
+      if( !SetKyotoArray() )
+	KyotoRoot = 2;
+    }
+
     nEvtKyt = kaChain -> GetEntries();
     cout << "Number of events in KyotoArray: " << nEvtKyt << endl;
   }
 
   //-------------------- event number check --------------------
   Int_t nEntry = nEvtTPC;
-  if(nEvtTPC > nEvents)
+  if(nEvtTPC > nEvents && nEvents != 0)
     nEntry = nEvents;
 
   if(nEvtKTN != 0 && nEntry > nEvtKTN)
@@ -74,32 +99,52 @@ void Assemble_flwv1(Int_t nevt = -1)
   // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
   //-------------------- event loop --------------------
   // $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  TDatime dtime;
+  TDatime btime(dtime);
  
   for (Int_t i=0; i<nEntry;i++) {
     Initialize(i);
 
-    if(i%1000 == 0) std::cout << "Process " << i << std::endl;
+    if(i%1000 == 0) {
+      dtime.Set();
+      Int_t ptime = dtime.Get() - btime.Get();
+      std::cout << "Process " << i << "/"<< nEntry << " = "
+		<< ((Double_t)(i)/(Double_t)nEntry)*100. << " % --->"
+                << dtime.AsString() << " ---- "
+		<< (Int_t)ptime/60 << " [min] "
+                << std::endl;
+    }
+
 
     // --------------- RIDF --------------
-    ribfChain->GetEntry(i);
+    if(BigRIPS)
+      ribfChain->GetEntry(i);
+
+    //    cout << " tx : " << tx << " ty : " << ty << endl;
+
     // --------------- TPC ---------------
     fChain -> GetEntry(i);
     // --------------- KATANA ------------
     if(KATANA && i < nEvtKTN) {
       kChain -> GetEntry(i);
+
+      max_veto = katanaroot->max_veto;
     }
     // --------------- KytoArray ----------
     if(KyotoArry && i < nEvtKyt){
       kaChain -> GetEntry(i);
-      bkyhitx -> GetEntry(i);
-      bkyhitz -> GetEntry(i);
 
-      for(Int_t ik = 0; ik < (Int_t)kyhitz->size(); ik++){
-	if(kyhitch->at(ik) <= 31) kyotomL++;
-	else kyotomR++;
+      if(KyotoRoot == 1){
+	bkyhitx -> GetEntry(i);
+	bkyhitz -> GetEntry(i);
+
+	for(Int_t ik = 0; ik < (Int_t)kyhitz->size(); ik++){
+	  if(kyhitch->at(ik) <= 31) kyotomL++;
+	  else kyotomR++;
+	}
       }
     }
-
+    
 
     // --- Beam on the target  --------------------
     if(CheckBeamPosition(TVector2(tx,ty))) bevt[0] = 1;
@@ -137,8 +182,10 @@ void Assemble_flwv1(Int_t nevt = -1)
       STTrack *trackFromArray = (STTrack*) trackArray -> At(iTrack);      
       TClonesArray &ptpcParticle = *tpcParticle;
 
+
       new(ptpcParticle[iTrack]) STParticle(trackFromArray);
       STParticle *aParticle = (STParticle*) tpcParticle->At(iTrack);
+
 
       //--- check origin of the track ---;
       if(CheckBDCvsTrackCorrelation(aParticle->GetTargetPlaneVertex())) {
@@ -147,17 +194,18 @@ void Assemble_flwv1(Int_t nevt = -1)
 	ntrack[1]++;
       }
 
-
-      if(aParticle->CheckTrackonTarget()) {
+      if(aParticle->GetFromTargetFlag()) {
 	ntrack[2]++;
       }
 
+      //      if(aParticle->Check
+
+      if(bevt[0]) aParticle->SetBeamonTargetFlag(1);
+      if(bevt[2]) aParticle->SetVertexZAtTargetFlag(1);
       if(bevt[3]) aParticle->SetVertexAtTargetFlag(1);
       if(bevt[4]) aParticle->SetVertexBDCCorrelationFlag(1);
-           
-      Double_t R_angle = 6.*(3.141592/180.);
-      aParticle->RotateMomentum(R_angle);
-      
+      aParticle->SetBestTrackFlag();
+      if(aParticle->GetBestTrackFlag()) ntrack[3]++;
 
       //-------------------- end of User Analysis --------------------
     }
@@ -166,18 +214,25 @@ void Assemble_flwv1(Int_t nevt = -1)
   flw->Write();
   
   cout << " Output root file is : " << fout->GetName() << endl;
-}
 
+  if(gROOT->IsBatch()) {
+    fout->Close();
+    
+    cout << " is closed " << endl;
+    exit(0);
+  }
+}
 
 //##################################################//
 void OutputTree(Int_t nmax)
 {
   TString sdeb = ".s";
   if(nmax < 0)  sdeb = "";
-  TString foutname = "../data/run"+sRun+"_flw1"+sdeb+".root";
+
+  TString foutname = "../data/run"+sRun+"_flw_v"+sVer+sdeb+".root";
 
   fout = new TFile(foutname,"recreate");
-  flw = new TTree("flw","Beam and TPC track");
+  flw  = new TTree("flw","Beam and TPC track");
   
   BeamonTarget = new TVector2();
 
@@ -186,14 +241,30 @@ void OutputTree(Int_t nmax)
   cout << "Output file is " << foutname << endl;
 
   //-- output
-  flw->Branch("irun",&irun,"irun/I");
+  flw->Branch("irun",&iRun,"irun/I");
   flw->Branch("bevt",bevt,"bevt[7]/I");
   flw->Branch("aoq",&aoq,"aoq/F");
   flw->Branch("z",&z,"z/F");
   flw->Branch("BDCtc",&BeamonTarget);
-  //  flw->Branch("STTrack", &trackArray);
   flw->Branch("STVertex",&vertexArray);  
   flw->Branch("STParticle",&tpcParticle);
+  flw->Branch("ntrack",ntrack,"ntrack[7]/I");
+ 
+  if(KyotoArry){  //Kyoto Array
+    flw->Branch("kymult",&kynHit,"kymult/I");
+    
+    if(KyotoRoot == 1) {
+      flw->Branch("kyhit",&kyhitch);           
+      flw->Branch("kyxpos",&kyhitx);
+      flw->Branch("kyzpos",&kyhitz);
+    }
+  }
+  
+  if(KATANA){// KATANA
+    flw->Branch("kamult",&katanaM,"kamult/I");
+    flw->Branch("max_veto",&max_veto,"max_veto/F");
+  }
+
 }
 
 void Initialize(Int_t ievt)
@@ -229,16 +300,15 @@ Int_t GetBeamPID(){
 
 void BeamPID()
 {
-  sRun = Form("%d",irun);
 
   SnA = 0;
-  if(irun >= 2174 && irun <= 2509)
+  if(iRun >= 2174 && iRun <= 2509)
     SnA = 108;
-  else if( irun >= 2836 && irun <= 3039)
+  else if( iRun >= 2836 && iRun <= 3039)
     SnA = 132;
-  else if( irun >= 3058 && irun <= 3184)
+  else if( iRun >= 3058 && iRun <= 3184)
     SnA = 124;
-  else if( irun >= 2520 && irun <= 2653)
+  else if( iRun >= 2520 && iRun <= 2653)
     SnA = 112;
 
   if(SnA == 132){
@@ -261,30 +331,34 @@ void BeamPID()
 
 void SetDataDirectory()
 {
-  if(irun == 3023)
-    rootDir = "/cache/scr/spirit/mizuki/SpiRITROOT/macros/recoData/";
+  // 2016 Chrismas version 
+  //  rootDir = "/data/spdaq01/recoData/20161219/NoCorrection/rootfiles/";
 
-  else if(irun >= 2331 && irun <= 3039) {  
-    rootDir = "/data/spdaq01/recoData/v1.03+20160411.2016runs/rootfiles/";
-  }
-  else {
-    rootDir = "/cache/scr/spirit/mizuki/SpiRITROOT/macros/recoData/";
-  }
+  // upto 9 layer
+  rootDir = "/xrootd/spdaq01/recoData/20161219/GGCalibGGSubtract_Layer90/rootfiles/";
+
+
+  // if(iRun == 2331)
+  //   rootDir = "/data/spdaq01/recoData/20161219/NoCorrection/rootfiles/";
+
+  // else if(iRun == 2477 || iRun == 2567)
+  //   rootDir = "/data/spdaq01/recoData/20161219/GGCalibGGSubtract/rootfiles/";
+
+  // else if(iRun == 3023)
+  //   rootDir = "/cache/scr/spirit/mizuki/SpiRITROOT/macros/recoData/";
+
+  // else if(iRun >= 2331 && iRun <= 3039) {  
+  //   rootDir = "/data/spdaq01/recoData/v1.03+20160411.2016runs/rootfiles/";
+  // }
+  // else {
+  //   rootDir = "/cache/scr/spirit/mizuki/SpiRITROOT/macros/recoData/";
+  // }
 }
 
 void SetKATANADirectory()
 {
   ktnrootDir = "/data/spdaq01/katana/root/katana/";
 }
-
-void SetKYOTODirectory()
-{
-  //kytrootdir = "/data/spdaq01/ridf/root/kyotoroot/";
-  //kytrootdir = "/cache/scr/spirit/mizuki/SpiRITROOT/macros/kyotoData/";
-  kytrootDir = "/cache/scr/spirit/kaneko/kyotoroot/";
-}
-
-
 
 
 void SetBeamOnTarget(TVector2 vt)
@@ -379,12 +453,11 @@ Bool_t CheckBDCvsTrackCorrelation(TVector3 trackatTarget)
 void SetKATANARoot()
 {
   //----- KATANA data --------------------
-  auto kChain = new TChain("kat");
+  kChain = new TChain("kat");
 
-  TString ktnrootdir;
   SetKATANADirectory();
 
-  kChain->Add(ktnrootdir+"run"+sRun+".katana.root");
+  kChain->Add(ktnrootDir+"run"+sRun+".katana.root");
 
   kChain -> SetBranchAddress("nhit",&katanaM);
   kChain -> SetBranchAddress("evt",&event_number);
@@ -397,30 +470,52 @@ void SetKATANARoot_bt()
   //----- KATANA data --------------------
   gSystem->Load("KatanaRoot/KatanaRoot_Load_cpp.so");
 
-  auto kChain = new TChain("tree");
+  kChain = new TChain("tree");
 
-  TString ktnrootdir;
   SetKATANADirectory();
 
-  kChain->Add(ktnrootdir+"run"+sRun+".root");
+  kChain->Add(ktnrootDir+"run"+sRun+".root");
 
   kChain -> SetBranchAddress("Katana",&katanaroot);
   kChain -> SetBranchAddress("TriggerBox",&triggerbox);
 
 }
 
-void SetKyotoArray()
+Bool_t SetKyotoArray()
 {
-  auto kaChain = new TChain("kyotoM");
+  kaChain = new TChain("kyotoM");
 
-  SetKYOTODirectory();
-  kaChain-> Add(kytrootDir+"run"+sRun+".kyotopos.root");
+  TString kytDir = "/cache/scr/spirit/kaneko/rootfile/kyoto/";
+  TString kytFile = "run"+sRun+".kyotopos.root";
+  if( !gSystem->FindFile(kytDir, kytFile)) 
+    return kFALSE;
+
+  kaChain-> Add(kytFile);
 
   kaChain-> SetBranchAddress("multiplicity",&kynHit);
   kaChain-> SetBranchAddress("hitch",&kyhitch,&bkyhitch);
   kaChain-> SetBranchAddress("hitxpos",&kyhitx,&bkyhitx);
   kaChain-> SetBranchAddress("hitzpos",&kyhitz,&bkyhitz);
+  cout << "Set Kyoto Array " << kytFile << endl;
+
+  return kTRUE;
+}
+
+Bool_t SetKyotoMultiplicity()
+{
+  kaChain = new TChain("tree");
+
+  TString kytDir = "/cache/scr/spirit/kaneko/rootfile/kyoto_re/mult/";
+  TString kytFile = "run"+sRun+".mult.root";
+  if( !gSystem->FindFile(kytDir, kytFile) ) 
+    return kFALSE;
+
+  kaChain-> Add(kytFile);
+
+  kaChain-> SetBranchAddress("mult_ctcut",&kynHit);
+  cout << "Set Kyoto Multiplicity " << kytFile << endl;
   
+  return kTRUE;
 }
 void SetBigRIPS()
 {
@@ -449,7 +544,7 @@ void SetTPC()
   while(kTRUE){
     
     TString recoFile = Form("run"+sRun+"_s%d.reco.v1.03.root",i);
-    //    cout << " recoFile " << rootDir+recoFile << endl;
+       cout << " recoFile " << rootDir+recoFile << endl;
     
     if(gSystem->FindFile(rootDir,recoFile)){
       fChain -> Add(recoFile);
