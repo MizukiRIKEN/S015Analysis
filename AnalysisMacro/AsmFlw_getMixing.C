@@ -86,7 +86,7 @@ void AsmFlw_getMixing(Int_t nmax = -1)
       STParticle *aPart1;
       Int_t mixEvt = ievt;
 
-      cout << " event " << ievt << endl;
+      //      cout << " event " << ievt << endl;
 
       if( bMix ) aPart1 = GetMixedTrack(&mixEvt); // Get a track randomly
       else       aPart1 = (STParticle*) aParticleArray -> At(nLoop);
@@ -96,6 +96,11 @@ void AsmFlw_getMixing(Int_t nmax = -1)
       TVector3 pp(aPart1->GetMomentum().X(),
 		  aPart1->GetMomentum().Y(),
 		  aPart1->GetMomentum().Z());
+
+
+      TVector2 ppt(aPart1->GetMomentum().X(),
+		   aPart1->GetMomentum().Y());
+
 
       if(aPart1 && aPart1->GetBestTrackFlag() && aPart1->GetLinearPID()>1000
 	 && pp.Pt() < 500){
@@ -117,25 +122,16 @@ void AsmFlw_getMixing(Int_t nmax = -1)
 
 	unitP += pp.Unit();
     	
-	cout << " ntrack " << numGoodTrack << endl;
+	//	cout << " ntrack " << numGoodTrack << endl;
 	if( pp.Z() < 400){
 	  //if(aPart1->GetRapidity() > 0.4) {
-	  unitP_t += pp.Unit();
+	  unitP_t += ppt.Unit();
 	  mtrack_t++;	    
 
-	  // cout << "p_t " << numGoodTrack << " / " << mtrack_t << " "
-	  //      << pp.Unit().X() << " : " << pp.Unit().Y() <<" : " <<pp.Unit().Z() << " "
-	  //      << unitP_t.X() << " : " << unitP_t.Y() <<" : " << unitP_t.Z() 
-	  //      << endl; 
 	}
 	else {
-	  unitP_b += pp.Unit();
+	  unitP_b += ppt.Unit();
 	  mtrack_b++;
-
-	  // cout << "p_b " << numGoodTrack << " / " << mtrack_b << " "
-	  //      << pp.Unit().X() << " : " << pp.Unit().Y() <<" : " <<pp.Unit().Z() << " " 
-	  //      << unitP_b.X() << " : " << unitP_b.Y() <<" : " << unitP_b.Z() 
-	  //      << endl; 
 
 	}
 
@@ -230,8 +226,8 @@ void Initialize()
 {
   
   unitP   = TVector3(0,0,0);
-  unitP_b = TVector3(0,0,0);
-  unitP_t = TVector3(0,0,0);
+  unitP_b = TVector2(0,0);
+  unitP_t = TVector2(0,0);
   unitP_lang  = TVector3(0,0,0);
   
   numGoodTrack = 0;

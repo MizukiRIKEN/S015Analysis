@@ -47,8 +47,8 @@ vector<Double_t> iphi;
 vector<Double_t> rapid;
 vector<Double_t> etot;
 TVector3 unitP;
-TVector3 unitP_b;
-TVector3 unitP_t;
+TVector2 unitP_b;
+TVector2 unitP_t;
 TVector3 unitP_lang;
 Int_t    kymult;
 // Tree out end

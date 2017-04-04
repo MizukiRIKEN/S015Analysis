@@ -3,6 +3,8 @@
   TString arun = gSystem -> Getenv("RUN");
   TString sVer = gSystem -> Getenv("VER");
 
+  Float_t fVer = atof(sVer);
+
   if( arun=="" || sVer=="") {
     cout << "Plase type " << endl;
     cout << "$ RUN=#### VER=#.# root compRDvsMXplot.C" << endl;
@@ -46,23 +48,6 @@
     
   }
 
-
-
-  // TFile *aFile[2];
-  // TTree *aTree[2];
-
-
-  // aFile[0] = TFile::Open(fname[0]);
-  // aTree[0] = (TTree*)gROOT->FindObject("rflw");
-  // if( !aTree[0] ) return;
-  // aTree[0]->ls();
-
-  // aFile[1] = TFile::Open(fname[1]);
-  // aTree[1] = (TTree*)gROOT->FindObject("mflw");
-  // if( !aTree[1] ) return;
-  // aTree[1]->ls();
-
-
   auto aLeg = new TLegend(0.1,0.8,0.3,0.9);
   TString fleg[2];
   fleg[0] = " Real ";
@@ -80,7 +65,6 @@
   }
 
 
-  //  rChain[0]->cd();
 }
 
 
@@ -274,7 +258,13 @@ void SetRange(TString param, Int_t *nbin, Double_t *range)
     *nbin = 60;  range[0] = 0; range[1] = 6.4;
   }
   else {
-    *nbin = 60;  range[0] = -3.2; range[1] = 3.2;
+    *nbin = 60;
+    if(fVer <= 6.2) {
+        range[0] = -3.2; range[1] = 3.2;
+    }
+    else {
+      range[0] = 0; range[1] = 6.4;
+    }
     cout << " param " << param << endl;
   }
   
