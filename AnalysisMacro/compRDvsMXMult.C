@@ -1,5 +1,7 @@
-//void compRScsMX()
 {
+  cout << "compRDvsMXMult" << endl;
+
+
   TString arun = gSystem -> Getenv("RUN");
   TString sVer = gSystem -> Getenv("VER");
 
@@ -12,27 +14,28 @@
   }
 
 
-  
   Int_t nrun = (arun.Length()-1)/5;
   cout << arun << "-> nrun " << nrun << endl;;
 
+  TString printHeader = "FlwRUN"+arun(1,4)+ Form("m%d",nrun); 
+  TString printName ;
   vector<Int_t> lrun;
   Int_t ist = 1;
   while(ist < arun.Length() - 4) {
     TString prun = arun(ist,4);
     lrun.push_back( atoi(prun) );
+
     ist+=5;
   }
 
   for(Int_t i = 0; i < nrun; i++)
     cout << " lrun = " << lrun.at(i) << endl;
 
-
-
+ 
   TChain *rChain[2];
   rChain[0] = new TChain("rflw");
   rChain[1] = new TChain("mflw");
-  
+
 
   TString fname[2];
 
@@ -42,10 +45,10 @@
 
     cout << fname[1] << endl;
     cout << fname[0] << endl;
-    
+
     rChain[0]->Add(fname[0]);
     rChain[1]->Add(fname[1]);
-    
+
   }
 
   auto aLeg = new TLegend(0.1,0.8,0.3,0.9);
@@ -64,9 +67,7 @@
     hp[i] = new TH1D();
   }
 
-
 }
-
 
 
 void plot1D(TString param = "deltphi", TString cut="",  TString opt="")
@@ -96,24 +97,19 @@ void plot1D(TString param = "deltphi", TString cut="",  TString opt="")
     hp[i]->Print();
 
   }
-    
+
 
   cc[0]->Divide(1,2);
 
   for(Int_t i = 0; i < 2; i++){
     cc[0]->cd(i+1);
-    //    rChain[i]->cd();
+    //    rChain[i]->cd();                                                                                                                           
     TString hdraw = Form(param+">>hp_%d",i);
     gROOT->cd();
     hp[i]->SetDirectory(gROOT);
     rChain[i]->Draw(hdraw,cut);
-
-
   }
 
-
-
-  
   aLeg->Clear();
   aLeg->SetHeader(fname[0]+" : "+param);
 
@@ -126,7 +122,7 @@ void plot1D(TString param = "deltphi", TString cut="",  TString opt="")
     aLeg  -> AddEntry(hk[i], fleg[i], "l");
 
     hp[i]->SetLineColor(iColor[i]);
-    hk[i]->SetLineColor(iColor[i]);  
+    hk[i]->SetLineColor(iColor[i]);
   }
 
 
@@ -146,12 +142,10 @@ void plot1D(TString param = "deltphi", TString cut="",  TString opt="")
   aLeg  -> Draw();
 
   cc[1]->cd(2);
-
-
   TH1D *hk0 = (TH1D*)gROOT->FindObject("hp_0");
   TH1D *hk1 = (TH1D*)gROOT->FindObject("hp_1");
-  //  TH1D *dvd_01 = new TH1D((*hk0)/(*hk1));
-  //  TH1D *dvd_01 = new TH1D((*hk0)-(*hk1));
+  //  TH1D *dvd_01 = new TH1D((*hk0)/(*hk1));                                                                                                        
+  //  TH1D *dvd_01 = new TH1D((*hk0)-(*hk1));                                                                                                        
   dvd_01 = new TH1D((*hk0)-(*hk1));
   dvd_01->SetName("dvd_01");
 
@@ -163,7 +157,8 @@ void plot1D(TString param = "deltphi", TString cut="",  TString opt="")
   dvd_01 -> Draw(opt);
   cc[1]  -> Update();
 
-
+  printName = printHeader+ param;
+  cout << " Output Name " << printName << endl;                                                                                                   
 }
 
 
@@ -179,7 +174,7 @@ void plot2D(TString paramy = "deltphi", TString paramx = "rapid" , TString cut="
   SetRange(paramx, &nbin[0], range[0]);
   cout<<paramx  << " nbin " << nbin[0] << " range[0]:" << range[0][0] << " range[1]:"<<range[0][1] << endl;
 
-  
+
   SetRange(paramy, &nbin[1], range[1]);
   cout <<paramy << " nbin " << nbin[1] << " range[1]:" << range[1][0] << " range[1]:"<<range[1][1] << endl;
 
@@ -190,8 +185,9 @@ void plot2D(TString paramy = "deltphi", TString paramx = "rapid" , TString cut="
 
   for(Int_t i = 0; i < 2; i++){
     cc[i]->cd();
-    //    rChain[i]->cd();
-    
+    //    rChain[i]->cd();                                                                                                                           
+
+
     pxy[i]->SetDirectory(gROOT);
     gROOT->cd();
     rChain[i] -> Draw(Form(paramy+":"+paramx+">>hpxy_%d",i),cut,"colz");
@@ -203,18 +199,21 @@ void plot2D(TString paramy = "deltphi", TString paramx = "rapid" , TString cut="
   dvd_02->SetTitle("Real/Mix");
   dvd_02->Draw("colz");
   cc3->SetLogz();
+
+  printName = printHeader + paramx+"_"+paramy;
+  //cout << "Output Name" << printName << endl;                                                                                                    
 }
 
 void dphibt(TString cut="", TString opt="")
 {
   if(cut !="") cut = "&&"+cut;
-  //  plot1D("TVector2::Phi_mpi_pi(unitP_b.Phi()-unitP_t.Phi())","mtrack_b>0&&mtrack_t>0"+cut);
+  //  plot1D("TVector2::Phi_mpi_pi(unitP_b.Phi()-unitP_t.Phi())","mtrack_b>0&&mtrack_t>0"+cut);                                                      
   plot1D("TVector2::Phi_0_2pi(unitP_b.Phi()-unitP_t.Phi())","mtrack_b>0&&mtrack_t>0"+cut,opt);
 
   auto ccp = new TCanvas("ccp", "comparison 2",700, 600);
   ccp->cd();
   dvd_01 -> Draw(opt);
-  
+
 }
 
 
@@ -224,7 +223,7 @@ void AMDcomp()
 
   TFile *afile2 = new TFile("/cache/scr/spirit/mizuki/AMD/AMDhard.g4.root");
 
-  
+
   TH1I *h1 = (TH1I*)gROOT->FindObject("h1");
   Double_t nrmf = h1->Integral();
   h1 -> Scale(1./nrmf);
@@ -243,7 +242,7 @@ void SetRange(TString param, Int_t *nbin, Double_t *range)
   if(param == "pz") {
     *nbin = 200; range[0] = 0.;   range[1] = 1500.;
   }
-  else if(param == "px" || param == "py" ) {
+  else if(param == "px" || param == "py" || param(1,2) == "px" ) {
     *nbin = 200; range[0] = -500.;range[1] = 500;
     cout << " param " << param << endl;
   }
@@ -254,20 +253,25 @@ void SetRange(TString param, Int_t *nbin, Double_t *range)
   else if(param == "rapid") {
     *nbin = 100; range[0] = 0.;   range[1] = 1.;
   }
+  else if(param == "prapid") {
+    *nbin = 100; range[0] = 0.;   range[1] = 3.5;
+  }
+
+
   else if(param(0,19) == "TVector2::Phi_0_2pi") {
     *nbin = 60;  range[0] = 0; range[1] = 6.4;
   }
   else {
     *nbin = 60;
     if(fVer <= 6.2) {
-        range[0] = -3.2; range[1] = 3.2;
+      range[0] = -3.2; range[1] = 3.2;
     }
     else {
       range[0] = 0; range[1] = 6.4;
     }
     cout << " param " << param << endl;
   }
-  
+
 }
 
 
@@ -280,6 +284,16 @@ void Multiplicity(TString stitle = "")
   hk[1]->Draw("same");
   aLeg->SetHeader("");
   aLeg->Draw();
-  
-  //  cc1->SaveAs("FlwRUN2900_RealMix_Multiplicity.png");
+
+  //  cc1->SaveAs("FlwRUN2900_RealMix_Multiplicity.png");                                                                                            
 }
+
+void SaveCanvas(TString ext = ".png")
+{                                                                                                                                                
+  cc0->SaveAs(printName+"RL"+ext);
+  cc1->SaveAs(printName+"MX"+ext);
+  cc3->SaveAs(printName+"RM"+ext);
+}                                                                                                                                                 
+
+
+
