@@ -3,7 +3,8 @@
 //   AsmFlw_getMixing.C
 // (c) Mizuki Kurata-Nishimura 
 //----------------------------------------
-// An input file comes from Assemble_flwv1.C
+// An input file comes from Assemble_flwv1.C (ASMV=1)
+// An input file comes from Assemble_flwv2.C (ASMV=2) since 11 April 2017
 //
 // RUN=#### MIX=0 root AsmFlw_getMixing.C or AsmFlw_getMixing.C\(100\)
 //         Real create a multiplicity distribution  
@@ -11,22 +12,41 @@
 void AsmFlw_getMixing(Int_t nmax = -1)
 {
   sRun = gSystem -> Getenv("RUN");
+  sAsm = gSystem -> Getenv("ASMV");
   sVer = gSystem -> Getenv("VER");
+  
 
   TString sMix = gSystem -> Getenv("MIX");
 
-  if(sRun =="" || sVer == "" ||sMix == "") {
+  if(sRun =="" || sVer == "" ||sMix == "" ) {
     cout << " Please type " << endl;
-    cout << "$ RUN=#### MIX=0(real) or 1(mix) VER=#.# root AsmFlw_getMixing(Number of event) " << endl;
+    cout << "$ RUN=#### ASMV= 1 or 2(-2: w/o rotation) MIX=0(real) or 1(mix) VER=#.# root AsmFlw_getMixing(Number of event) " << endl;
     exit(0);
   }
+
+  // Set default to 2.
+  if( sAsm == "" )  sAsm = "2";
+
+  if( sAsm == "2")
+    BeamAngle = kTRUE;
+  else if( sAsm == "-2"){
+    sAsm = 2;
+    BeamAngle = kFALSE;
+  }
+  else {
+    sAsm = "";
+    BeamAngle = kFALSE;
+  }
+
+  cout << " BeamAngle : " << BeamAngle << endl;
 
   if (sMix == "1") bMix = kTRUE;
   else bMix = kFALSE;
 
   iRun = atoi(sRun);
 
-  cout << "RUN = " << sRun << " with ver " << sVer  << " mix = " << sMix << endl;
+  cout << "RUN = " << sRun << " Assemble v" << sAsm 
+       << " with ver " << sVer  << " mix = " << sMix << endl;
 
   Open();
   Int_t mEvt = GetMultiplicityDistribution();
@@ -44,6 +64,7 @@ void AsmFlw_getMixing(Int_t nmax = -1)
 
   if( bMix ) {
     if( nmax == -1 )  nmax = mEvt;
+    else if( nmax == -2 ) nmax = mEvt*2;
   }
   else 
     if( nmax == -1 || nmax > nEntry )  nmax = nEntry; 
@@ -73,7 +94,6 @@ void AsmFlw_getMixing(Int_t nmax = -1)
     }
 
 
-    
     Int_t nLoop = 0;
 
     while(kTRUE) {
@@ -92,7 +112,7 @@ void AsmFlw_getMixing(Int_t nmax = -1)
       else       aPart1 = (STParticle*) aParticleArray -> At(nLoop);
       
 
-      // update to new version on 3 April.
+      // updated a new version on 3 April 2017.
       TVector3 pp(aPart1->GetMomentum().X(),
 		  aPart1->GetMomentum().Y(),
 		  aPart1->GetMomentum().Z());
@@ -101,9 +121,35 @@ void AsmFlw_getMixing(Int_t nmax = -1)
       TVector2 ppt(aPart1->GetMomentum().X(),
 		   aPart1->GetMomentum().Y());
 
+      Double_t vpt = pp.Pt();
+
+      Double_t psdrapid = -log( tan((pp.Theta()/2)) );
+
+      TVector3 pp_rot;
+      TVector2 ppt_rot;
+    // Rotate along beam angle
+      if( BeamAngle ){
+	if( !bMix ){  
+	  aX = ProjA/1000.;
+	  bY = ProjB/1000.;
+	}
+	
+	pp_rot = pp; 
+	pp_rot.RotateY(-aX);
+	pp_rot.RotateX(-bY);
+
+	ppt_rot = TVector2(pp_rot.X(), pp_rot.Y());
+
+	//	vpt = pp_rot.Pt();
+      }
+      
+	// cout << "vpt " << vpt 
+	//      << " aPart1->GetBestTrackFlag() "<< aPart1->GetBestTrackFlag() 
+	//      << endl;
 
       if(aPart1 && aPart1->GetBestTrackFlag() && aPart1->GetLinearPID()>1000
-	 && pp.Pt() < 500){
+       	 && vpt < 500){
+
 
 	numGoodTrack++;
 	if( bMix ) event.push_back(mixEvt);
@@ -115,19 +161,33 @@ void AsmFlw_getMixing(Int_t nmax = -1)
 	px.push_back(pp.X());
 	py.push_back(pp.Y());
 	pz.push_back(pp.Z());
+	pt.push_back(ppt);
 	mom.push_back(aPart1->GetP());
 	dedx.push_back(aPart1->GetTotaldEdx());
 	rapid.push_back(aPart1->GetRapidity());
 	etot.push_back(aPart1->GetEtotal());
+	prapid.push_back(psdrapid);
+
+
+	//rotated p
+	if( BeamAngle ) {
+	  TClonesArray &bp_rot = *p_rot;
+	  new(bp_rot[numGoodTrack-1]) TVector3(pp_rot);
+	  pt_rot.push_back(ppt_rot);
+
+	  theta_xz.push_back(aX);
+	  theta_yz.push_back(bY);
+	}
+	
+
+
 
 	unitP += pp.Unit();
     	
 	//	cout << " ntrack " << numGoodTrack << endl;
 	if( pp.Z() < 400){
-	  //if(aPart1->GetRapidity() > 0.4) {
 	  unitP_t += ppt.Unit();
 	  mtrack_t++;	    
-
 	}
 	else {
 	  unitP_b += ppt.Unit();
@@ -137,7 +197,6 @@ void AsmFlw_getMixing(Int_t nmax = -1)
 
 	if(aPart1->GetMomentum().Theta()<0.4) {
 	  unitP_lang += pp.Unit();
-	  //	  cout << "<< unitPlang " <<endl; 
 	} 
       }    
       nLoop++;
@@ -148,31 +207,38 @@ void AsmFlw_getMixing(Int_t nmax = -1)
     mtrack = vPart.size();
     for(Int_t i = 0; i < mtrack; i++){
 
-      TVector3 mExcRP(0.,0.,0.);
-      TVector3 mExcRP_b(0.,0.,0.);
-      TVector3 mExcRP_t(0.,0.,0.);
+      TVector2 mExcRP(0.,0.);
+      TVector2 mExcRP_b(0.,0.);
+      TVector2 mExcRP_t(0.,0.);
 
       for(Int_t k = 0; k < mtrack; k++){
 
      	if(i != k ) {
-	  mExcRP += vPart.at(k).Unit();
-          hRPrapd->Fill(rapid.at(k));
+	  mExcRP += pt.at(k).Unit();
+          hRPrapd->Fill(prapid.at(k));
 
-	  //	  if( rapid.at(k) > 0.4){
 	  if( pz.at(k) < 400){
-	    mExcRP_t += vPart.at(k).Unit(); 
-	    hRPrapd_t->Fill(rapid.at(k));
+	    mExcRP_t += pt.at(k).Unit(); 
+	    hRPrapd_t->Fill(prapid.at(k));
 	  }
 	  else {
-	    mExcRP_b += vPart.at(k).Unit(); 
-	    hRPrapd_b->Fill(rapid.at(k));
+	    mExcRP_b += pt.at(k).Unit(); 
+	    hRPrapd_b->Fill(prapid.at(k));
 	  }
 	}
       }
 
-      deltphi.push_back(  TVector2::Phi_mpi_pi( vPart.at(i).Phi()-mExcRP.Phi()));
-      deltphi_t.push_back(TVector2::Phi_mpi_pi( vPart.at(i).Phi()-mExcRP_t.Phi()));
-      deltphi_b.push_back(TVector2::Phi_mpi_pi( vPart.at(i).Phi()-mExcRP_b.Phi()));
+      deltphi.push_back(  TVector2::Phi_mpi_pi( pt.at(i).Phi()-mExcRP.Phi()));
+      deltphi_t.push_back(TVector2::Phi_mpi_pi( pt.at(i).Phi()-mExcRP_t.Phi()));
+      deltphi_b.push_back(TVector2::Phi_mpi_pi( pt.at(i).Phi()-mExcRP_b.Phi()));
+      
+      Double_t rpx = pt.at(i).Mod() * cos( pt.at(i).Phi() - mExcRP_b.Phi() );
+      hRPpxsr_b->Fill(prapid.at(i), rpx);
+      rpxb.push_back(rpx);
+
+      rpx = pt.at(i).Mod() * cos( pt.at(i).Phi() - mExcRP_t.Phi() );
+      hRPpxsr_t->Fill(prapid.at(i), rpx);
+      rpxt.push_back(rpx);
     }
 
     hm_b->Fill(mtrack_b);
@@ -202,7 +268,13 @@ void Open()
 {
 
   fChain = new TChain("flw");
-  TString fn = Form("../data/run%d_flw_v"+sVer(0,1)+".root",iRun);
+  TString fn;
+  if(sAsm == "1")
+    fn = Form("../data/run%d_flw_v"+sVer(0,1)+".root",iRun);
+  else
+    fn = Form("../data/run%d_flw_"+sAsm+"v"+sVer(0,1)+".root",iRun);
+
+
   fChain -> Add(fn);
   if(!fChain) {
     cout << " No data was found " << fn << endl;
@@ -218,6 +290,14 @@ void Open()
   fChain->SetBranchAddress("ntrack",ntrack);
   fChain->SetBranchAddress("kymult",&kymult);
 
+ if( BeamAngle ){
+    fChain->SetBranchAddress("ProjA",&ProjA);
+    fChain->SetBranchAddress("ProjB",&ProjB);
+    fChain->SetBranchAddress("aoq",&aoq);
+    fChain->SetBranchAddress("z",&z);
+
+    p_rot  = new TClonesArray("TVector3",150);
+  }
 
 
 }
@@ -240,6 +320,7 @@ void Initialize()
   pid.clear();
   vPart.clear();
   iphi.clear();
+  pt.clear();
   px.clear();
   py.clear();
   pz.clear();
@@ -250,8 +331,18 @@ void Initialize()
   deltphi_b.clear();
   iphi.clear();
   rapid.clear();
+  prapid.clear();
+  rpxt.clear();
+  rpxb.clear();
   etot.clear();
 
+  if( BeamAngle ){
+    pt_rot.clear();
+    p_rot->Clear();
+
+    theta_xz.clear();
+    theta_yz.clear();
+  }
 
   aParticleArray->Clear();
   mixParticleArray->Clear();
@@ -260,7 +351,7 @@ void Initialize()
 Int_t GetMultiplicityDistribution()
 {
   // Multplicity histgram
-  TString mHistFile = Form("run%d.ngt.root",iRun);
+  TString mHistFile = Form("run%d.ngt_v"+sVer(0,1)+".root",iRun);
   TString hf = mHistFile;
 
   Int_t nEvt = 0;
@@ -271,6 +362,9 @@ Int_t GetMultiplicityDistribution()
       cout << mHistFile << " is not found." << endl;
       exit(0);
     }
+    cout << "Multiplicity : "  << mHistFile << " is loaded." << endl;
+
+
     if( (TH1I*)mhfile->FindObject("hgtc") ) 
       exit(0);
     
@@ -280,12 +374,12 @@ Int_t GetMultiplicityDistribution()
     nEvt = histGT_r -> GetEntries();
   }
   else {
-    if( !gSystem->FindFile(".",hf) ) {
+    //    if( !gSystem->FindFile(".",hf) ) {
       mhfile = new TFile(mHistFile,"recreate");
       cout << mHistFile << " is created." << endl;
-    }
-    else
-      cout << mHistFile << " is existing." << endl;
+      //    }
+    // else
+    //   cout << mHistFile << " is existing." << endl;
   }
 
   return nEvt;
@@ -302,11 +396,11 @@ void OutputTree(Int_t nmax)
 
   if( bMix ) {
     foutname += "mxflw";
-    foutname += "v"+sVer+".root";
+    foutname += sAsm+"v"+sVer+".root";
   }
   else {
     foutname += "rdflw";
-    foutname += "v"+sVer+sdeb+".root";
+    foutname += sAsm+"v"+sVer+sdeb+".root";
   }
   
   TString fo = foutname;
@@ -352,22 +446,34 @@ void OutputTree(Int_t nmax)
   mflw->Branch("deltphi_b",&deltphi_b);
   mflw->Branch("iphi",&iphi);
   mflw->Branch("rapid",&rapid);
+  mflw->Branch("prapid",&prapid);
+  mflw->Branch("rpxt",&rpxt);
+  mflw->Branch("rpxb",&rpxb);
   mflw->Branch("etot",&etot);
   mflw->Branch("unitP",&unitP);
   mflw->Branch("unitP_b",&unitP_b);
   mflw->Branch("unitP_t",&unitP_t);
   mflw->Branch("unitP_lang",&unitP_lang);
   mflw->Branch("kymult",&kymult,"kymult/I");
+
+  if( BeamAngle ) {
+    mflw->Branch("p_rot" ,&p_rot);
+    mflw->Branch("theta_xz",&theta_xz);
+    mflw->Branch("theta_yz",&theta_yz);
+  }
+
   
   histGT       = new TH1I("histGT","generated tracks",50,0,50);
   histMixEvt   = new TH1I("histMixEvt","mixed event ID",10000,0,10000);
   histMixTrack = new TH1I("histMixTrack","mixed number of track",100,0,100);
   hgtc         = new TH1I("hgtc","number of good fragment",100,0,100);
-  hRPrapd      = new TH1D("hRPrapd","Rapidity region for R.P. all",100,0.,1.5);
-  hRPrapd_t    = new TH1D("hRPrapd_t","Rapidity region for R.P. y>0.4",100,0.,1.5);
-  hRPrapd_b    = new TH1D("hRPrapd_b","Rapidity region for R.P. y<-0.4",100,0.,1.5);
+  hRPrapd      = new TH1D("hRPrapd","Rapidity region for R.P. all",100,0.,5);
+  hRPrapd_t    = new TH1D("hRPrapd_t","Rapidity region for R.P. y>0.4",100,0.,3.5);
+  hRPrapd_b    = new TH1D("hRPrapd_b","Rapidity region for R.P. y<-0.4",100,0.,3.5);
   hm_t         = new TH1I("hm_t","Multi. y>0.4",50,0,50);
   hm_b         = new TH1I("hm_b","Multi. y>0.4",50,0,50);
+  hRPpxsr_b    = new TH2D("hRPpxsr_b","px vs psude Rapidity beam",100,0.,3.5, 100,-500,500);
+  hRPpxsr_t    = new TH2D("hRPpxsr_t","px vs psude Rapidity target",100,0.,3.5, 100,-500,500);
 }
 
 Int_t GetRandomNumTrack()
@@ -398,8 +504,14 @@ STParticle *GetMixedTrack(Int_t *ival)
 
     if(mevt > nEntry ) mevt = 0;
     fChain->GetEntry(mevt);
+
     Int_t nmixTrack = aParticleArray->GetEntries();
     Int_t imixTrack = (Int_t)pran.Uniform(0,nmixTrack);
+
+    if(sAsm == "2") {
+      aX = ProjA/1000.;
+      bY = ProjB/1000.;
+    }
 	  
     // cout << " Event " << mevt  
     // 	 << "  imixTrack/nmixTrack " << imixTrack << "/" << nmixTrack << endl;

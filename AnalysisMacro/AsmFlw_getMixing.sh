@@ -1,35 +1,65 @@
-#!/bin/bash
+#! /bin/bash                                                                                                                                                          
+
+ASMV=2
+VERSION=0.1
+
+#RUN=2900 ASMV=2 VER=0.1 MIX=0 root AsmFlw_getMixing.C
+#RUN=2900 ASMV=2 VER=0.1 MIX=1 root AsmFlw_getMixing.C
 
 
-function exe1(){
-#RUN=2900 VER=6.3 MIX=0 root -b -q AsmFlw_getMixing.C > asm2900v6r.log 
-#RUN=2900 VER=6.3 MIX=1 root -b -q AsmFlw_getMixing.C > asm2900v6m.log 
+RUNNUMBER1=("2901" "2905" "2907" "2913" "2914" "2916" "2917" "2918" "2919"
+ "2920" "2921" "2922" "2924" "2925" "2926" "2927" "2928" "2929" "2930" "2931" "2932" "2933" "2934" "2935" "2936" "2937" "2938" "2939" "2940" "2941")
 
-RUN=2901 VER=6.3 MIX=0 root -b -q AsmFlw_getMixing.C > asm2901v6r.log 
-RUN=2901 VER=6.3 MIX=1 root -b -q AsmFlw_getMixing.C > asm2901v6m.log 
+function v2exe_mix(){
+    typeset -i I=0
+    while(( I < ${#RUNNUMBER1[@]} ))
+    do
+        RUN=${RUNNUMBER1[I]}
+	LOG=asmv2r${RUN}.log
+        echo RUN${RUN} $LOG  ASMV:$ASMV version:$VERSION
+	RUN=${RUN} ASMV=${ASMV} VER=${VERSION} MIX=0 root -b -q AsmFlw_getMixing.C >& $LOG &
+        let I++
 
-RUN=2913 VER=6.3 MIX=0 root -b -q AsmFlw_getMixing.C > asm2913v6r.log 
-RUN=2913 VER=6.3 MIX=1 root -b -q AsmFlw_getMixing.C > asm2913v6m.log 
+        RUN=${RUNNUMBER1[I]}
+	LOG=asmv2r${RUN}.log
+        echo RUN${RUN} $LOG  ASMV:$ASMV version:$VERSION
+	RUN=${RUN} ASMV=${ASMV} VER=${VERSION} MIX=0 root -b -q AsmFlw_getMixing.C >& $LOG &
+        let I++
+
+        RUN=${RUNNUMBER1[I]}
+	LOG=asmv2r${RUN}.log
+        echo RUN${RUN} $LOG  ASMV:$ASMV version:$VERSION
+	RUN=${RUN} ASMV=${ASMV} VER=${VERSION} MIX=0 root -b -q AsmFlw_getMixing.C >& $LOG 
+        let I++
+    done
+
+    I=0
+    while(( I < ${#RUNNUMBER1[@]} ))
+    do
+        RUN=${RUNNUMBER1[I]}
+	LOG=asmv2m${RUN}.log
+        echo RUN${RUN} $LOG  ASMV:$ASMV version:$VERSION
+	RUN=${RUN} ASMV=${ASMV} VER=${VERSION} MIX=1 root -b -q AsmFlw_getMixing.C >& $LOG &
+        let I++
+
+        RUN=${RUNNUMBER1[I]}
+	LOG=asmv2m${RUN}.log
+        echo RUN${RUN} $LOG  ASMV:$ASMV version:$VERSION
+	RUN=${RUN} ASMV=${ASMV} VER=${VERSION} MIX=1 root -b -q AsmFlw_getMixing.C >& $LOG &
+        let I++
+
+        RUN=${RUNNUMBER1[I]}
+	LOG=asmv2m${RUN}.log
+        echo RUN${RUN} $LOG  ASMV:$ASMV version:$VERSION
+	RUN=${RUN} ASMV=${ASMV} VER=${VERSION} MIX=1 root -b -q AsmFlw_getMixing.C >& $LOG 
+        let I++
+    done
+
+
+
+
+
 }
 
-function exe2(){
-RUN=2905 VER=6.3 MIX=0 root -b -q AsmFlw_getMixing.C > asm2905v6r.log 
-RUN=2905 VER=6.3 MIX=1 root -b -q AsmFlw_getMixing.C > asm2905v6m.log 
 
-RUN=2907 VER=6.3 MIX=0 root -b -q AsmFlw_getMixing.C > asm2907v6r.log 
-RUN=2907 VER=6.3 MIX=1 root -b -q AsmFlw_getMixing.C > asm2907v6m.log 
-
-RUN=2914 VER=6.3 MIX=0 root -b -q AsmFlw_getMixing.C > asm2914v6r.log 
-RUN=2914 VER=6.3 MIX=1 root -b -q AsmFlw_getMixing.C > asm2914v6m.log 
-}
-
-function exe3(){
-RUN=2916 VER=6.3 MIX=0 root -b -q AsmFlw_getMixing.C > asm2916v6r.log 
-RUN=2916 VER=6.3 MIX=1 root -b -q AsmFlw_getMixing.C > asm2916v6m.log 
-
-RUN=2917 VER=6.3 MIX=0 root -b -q AsmFlw_getMixing.C > asm2917v6r.log 
-RUN=2917 VER=6.3 MIX=1 root -b -q AsmFlw_getMixing.C > asm2917v6m.log 
-
-RUN=2918 VER=6.3 MIX=0 root -b -q AsmFlw_getMixing.C > asm2918v6r.log 
-RUN=2918 VER=6.3 MIX=1 root -b -q AsmFlw_getMixing.C > asm2918v6m.log 
-}
+v2exe_mix

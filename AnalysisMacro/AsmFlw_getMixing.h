@@ -1,9 +1,16 @@
 #ifndef  ASMPLW_GETAZMCOLL
 #define  ASMPLW_GETAZMCOLL
 
+// Reading tree
 TClonesArray *aParticleArray = NULL;
 TClonesArray *mixParticleArray = NULL;
 Int_t         ntrack[7];
+Int_t         kymult;
+Double_t      ProjA;
+Double_t      ProjB;
+Double_t      aoq;
+Double_t      z;
+
 
 void Open();
 void Initialize();
@@ -16,6 +23,8 @@ STParticle* GetMixedTrack(Int_t *ival);
 TString sRun;
 Bool_t  bMix;  // kTRUE mixing kFALSE real data
 TString sVer;
+TString sAsm;
+Bool_t  BeamAngle;
  
 TChain *fChain;
 Int_t   nEntry;
@@ -26,6 +35,7 @@ TTree *mflw = NULL;
 
 
 vector<TVector3> vPart;
+vector<TVector2> pt;
 
 // Tree out
 Int_t   iRun;
@@ -46,11 +56,23 @@ vector<Double_t> deltphi_b;
 vector<Double_t> iphi;
 vector<Double_t> rapid;
 vector<Double_t> etot;
+vector<Double_t> prapid;
+vector<Double_t> rpxt;
+vector<Double_t> rpxb;
 TVector3 unitP;
 TVector2 unitP_b;
 TVector2 unitP_t;
 TVector3 unitP_lang;
-Int_t    kymult;
+vector<Double_t>  theta_xz;
+vector<Double_t>  theta_yz;
+
+Double_t         aX;
+Double_t         bY;
+
+TClonesArray     *p_rot = NULL;
+vector<TVector2> pt_rot;
+
+
 // Tree out end
 
 
@@ -64,8 +86,11 @@ TH1D *hRPrapd_t;
 TH1D *hRPrapd_b;
 TH1I *hm_t;
 TH1I *hm_b;
-
 TH1I *hgtc;
+
+TH2D *hRPpxsr_t;
+TH2D *hRPpxsr_b;
+
 
 TFile *mhfile;
 

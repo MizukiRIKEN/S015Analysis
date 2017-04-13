@@ -185,6 +185,7 @@ void Assemble_flwv1(Int_t nevt = -1)
 
       new(ptpcParticle[iTrack]) STParticle(trackFromArray);
       STParticle *aParticle = (STParticle*) tpcParticle->At(iTrack);
+      
 
 
       //--- check origin of the track ---;
@@ -326,7 +327,11 @@ void BeamPID()
     g124Sn=(TCutG*)gcutFile->Get("g124Sn");
     gcutFile->Close();
   }    
+
 }
+
+
+
 
 
 void SetDataDirectory()

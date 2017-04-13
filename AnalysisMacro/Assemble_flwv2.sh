@@ -1,59 +1,36 @@
 #! /bin/bash
+#RUN=2900 VER=0 root -b -q Assemble_flwv2.C
 VERSION=0
 
+RUNNUMBER1=("2901" "2905" "2907" "2913" "2914" "2916" "2917" "2918" "2919"
+ "2920" "2921" "2922" "2924" "2925" "2926" "2927" "2928" "2929" "2930" "2931" "2932" "2933" "2934" "2935" "2936" "2937" "2938" "2939" "2940" "2941")
+
 function v2exe1(){
-#RUN=2900 VER=$VERSION root -b -q Assemble_flwv2.C
-    RUN=2901 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2905 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2907 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2913 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-}
+    typeset -i I=0
+    while(( $I < ${#RUNNUMBER1[@]} ))
+    do
+	RUN=${RUNNUMBER1[I]} 
+	echo RUN${RUN} asmv2run${RUN}.log
+	RUN=${RUNNUMBER1[$I]} VER=$VERSION root -b -q Assemble_flwv2.C >& asmv2run${RUN}.log &
 
-function v2exe2(){
-    RUN=2914 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2916 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2917 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2918 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2919 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-}
+	let I++
+	RUN=${RUNNUMBER1[I]} 
+	echo RUN${RUN} asmv2run${RUN}.log
+	RUN=${RUNNUMBER1[I]} VER=$VERSION root -b -q Assemble_flwv2.C >& asmv2run${RUN}.log &
 
-function v2exe3(){
-    RUN=2920 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2921 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2922 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2924 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2925 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-}
+	let I++
+	RUN=${RUNNUMBER1[I]} 
+	echo RUN${RUN} asmv2run${RUN}.log
+	RUN=${RUNNUMBER1[I]} VER=$VERSION root -b -q Assemble_flwv2.C >& asmv2run${RUN}.log 
 
-function v2exe4(){
-    RUN=2926 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2927 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2928 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2929 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2930 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-}
-
-function v2exe5(){
-    RUN=2931 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2932 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2933 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2934 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2935 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-}
-
-function v2exe6(){
-    RUN=2936 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2937 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2938 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2939 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2940 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
-    RUN=2941 VER=$VERSION root -b -q Assemble_flwv2.C > asmv2{$RUN}.log
+	let I++
+    done
 }
 
 
-v2exe1 &
-v2exe2 &
-v2exe3 &
-v2exe4 &
-v2exe5 &
-v2exe6 &
+v2exe1 
+
+
+
+
+

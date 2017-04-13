@@ -150,12 +150,12 @@ void Assemble_flwv2(Int_t nevt = -1)
     }
     
 
-    // --- Beam on the target  --------------------
-    if(CheckBeamPosition(TVector2(tx,ty))) bevt[0] = 1;
-
     // --- BDC offset --------------------
     SetBeamOnTarget(TVector2(tx,ty));
     
+    // --- Beam on the target  --------------------
+    if(CheckBeamPosition()) bevt[0] = 1;
+
     bmpid = GetBeamPID();
     
     // --- Vertex selection --------------------
@@ -211,6 +211,16 @@ void Assemble_flwv2(Int_t nevt = -1)
       if(bevt[4]) aParticle->SetVertexBDCCorrelationFlag(1);
       aParticle->SetBestTrackFlag();
       if(aParticle->GetBestTrackFlag()) ntrack[3]++;
+
+
+      // cout << " GetVertexAtTargetFlag  "      <<  aParticle->GetVertexAtTargetFlag() 
+      // 	   << " GetVertexZAtTargetFlag "      <<  aParticle->GetVertexZAtTargetFlag()
+      // 	   << " GetVertexBDCCorrelationFlag " <<  aParticle->GetVertexBDCCorrelationFlag()
+      // 	   << " GetBDCCorrelationFlag "       <<  aParticle->GetBDCCorrelationFlag()
+      // 	   << " GetFromTargetFlag "           <<  aParticle->GetFromTargetFlag()
+      // 	   << " GetBeamonTargetFlag  "        <<  aParticle->GetBeamonTargetFlag()
+      // 	   << endl;
+
 
       //-------------------- end of User Analysis --------------------
     }
@@ -422,8 +432,10 @@ void SetBeamOnTarget(TVector2 vt)
    
 }
 
-Bool_t CheckBeamPosition(TVector2 txy)
+Bool_t CheckBeamPosition()
 {
+  TVector2 txy = *BeamonTarget;
+
   if((txy.X() >= tx_right &&txy.X() <= tx_left) &&  
      (txy.Y() >= ty_btm  && txy.Y() <= ty_top ))   
     return kTRUE;
@@ -466,7 +478,7 @@ Bool_t CheckBDCvsVertexCorrelation(TVector2 vxy)
 Bool_t CheckBDCvsTrackCorrelation(TVector3 trackatTarget)
 {
   Double_t diffx = BeamonTarget->X() - trackatTarget.X();
-  Double_t diffy = BeamonTarget->Y() - trackatTarget.Y();
+  Double_t diffy = BeamonTarget->Y() - trackatTarget.Y() + trackVy_offset;
 
   if(abs(diffx) < trackVx_nsig*trackVx_sigma &&
      abs(diffy) < trackVy_nsig*trackVy_sigma)

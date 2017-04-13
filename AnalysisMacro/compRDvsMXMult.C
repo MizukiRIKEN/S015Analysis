@@ -1,23 +1,25 @@
 {
   cout << "compRDvsMXMult" << endl;
-
+ 
 
   TString arun = gSystem -> Getenv("RUN");
+  TString sAsm = gSystem -> Getenv("ASMV");
   TString sVer = gSystem -> Getenv("VER");
 
   Float_t fVer = atof(sVer);
 
-  if( arun=="" || sVer=="") {
+  if( arun=="" || sVer=="" || sAsm=="" || arun.Length() == 4) {
     cout << "Plase type " << endl;
-    cout << "$ RUN=#### VER=#.# root compRDvsMXplot.C" << endl;
+    cout << "$ RUN={####} ASMV=# VER=#.# root compRDvsMXplot.C" << endl;
     exit(0);
   }
+
 
 
   Int_t nrun = (arun.Length()-1)/5;
   cout << arun << "-> nrun " << nrun << endl;;
 
-  TString printHeader = "FlwRUN"+arun(1,4)+ Form("m%d",nrun); 
+  TString printHeader = "Flw"+sAsm+"vRUN"+arun(1,4)+ Form("m%d",nrun); 
   TString printName ;
   vector<Int_t> lrun;
   Int_t ist = 1;
@@ -39,9 +41,11 @@
 
   TString fname[2];
 
+  if( sAsm == "1") sAsm="";
+
   for(Int_t i = 0; i < (Int_t)lrun.size(); i++){
-    fname[0] = Form("../data/run%d_rdflwv"+sVer+".root",lrun.at(i));
-    fname[1] = Form("../data/run%d_mxflwv"+sVer+".root",lrun.at(i));
+    fname[0] = Form("../data/run%d_rdflw"+sAsm+"v"+sVer+".root",lrun.at(i));
+    fname[1] = Form("../data/run%d_mxflw"+sAsm+"v"+sVer+".root",lrun.at(i));
 
     cout << fname[1] << endl;
     cout << fname[0] << endl;
@@ -238,7 +242,6 @@ void AMDcomp()
 void SetRange(TString param, Int_t *nbin, Double_t *range)
 {
 
-
   if(param == "pz") {
     *nbin = 200; range[0] = 0.;   range[1] = 1500.;
   }
@@ -257,9 +260,12 @@ void SetRange(TString param, Int_t *nbin, Double_t *range)
     *nbin = 100; range[0] = 0.;   range[1] = 3.5;
   }
 
-
   else if(param(0,19) == "TVector2::Phi_0_2pi") {
     *nbin = 60;  range[0] = 0; range[1] = 6.4;
+  }
+
+  else if(param == "deltphi"){
+    *nbin = 60; range[0] = -3.2; range[1] = 3.2;
   }
   else {
     *nbin = 60;

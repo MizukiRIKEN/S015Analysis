@@ -16,10 +16,15 @@
 
 
 //setParameters                                                                                               
-Double_t tx_right= 10.;
-Double_t tx_left = 28.;
-Double_t ty_top  = 10.;
-Double_t ty_btm  = -10.;
+Double_t tx_right= -14.7;
+Double_t tx_left =  19.4;
+Double_t ty_top  =  15.62;
+Double_t ty_btm  = -13.74;
+
+/* Double_t tx_right= 10.; */
+/* Double_t tx_left = 28.; */
+/* Double_t ty_top  = 10.; */
+/* Double_t ty_btm  = -10.; */
 
 Double_t vrt_Zmin = -14.6;
 Double_t vrt_Zmax = -6.7;
@@ -44,6 +49,7 @@ Double_t trackVx_sigma  =  3.292;
 Double_t trackVy_sigma  =  2.7;
 Double_t trackVx_nsig   =  6;
 Double_t trackVy_nsig   =  4;
+Double_t trackVy_offset = -224.3;
 
 Double_t beamVx_min = -80.;
 Double_t beamVx_max =  40.;
@@ -132,7 +138,7 @@ void      SetDataDirectory();
 void      SetKATANADirectory();
 void      SetBeamOnTarget(TVector2 vt);
 
-Bool_t    CheckBeamPosition(TVector2 txy);
+Bool_t    CheckBeamPosition();
 Bool_t    CheckVertexXY(TVector2 vxy);
 Bool_t    CheckVertexZ(Double_t vz);
 Bool_t    CheckBDCvsVertexCorrelation(TVector2 vxy);
