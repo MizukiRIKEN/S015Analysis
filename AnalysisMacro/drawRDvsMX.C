@@ -40,14 +40,23 @@
 
   if( sAsm == "1") sAsm="";
   for(Int_t i = 0; i < (Int_t)lrun.size(); i++){
-    fname[0] = Form("../data/run%d_rdflw"+sAsm+"v"+sVer+".root",lrun.at(i));
-    fname[1] = Form("../data/run%d_mxflw"+sAsm+"v"+sVer+".root",lrun.at(i));
+    TString rootdir = "../data"; 
+    fname[0] = Form("run%d_rdflw"+sAsm+"v"+sVer+".root",lrun.at(i));
+    fname[1] = Form("run%d_mxflw"+sAsm+"v"+sVer+".root",lrun.at(i));
 
     cout << fname[1] << endl;
     cout << fname[0] << endl;
 
-    rChain[0]->Add(fname[0]);
-    rChain[1]->Add(fname[1]);
+    if(gSystem->FindFile(rootdir,fname[0]))
+      rChain[0]->Add(fname[0]);
+    else
+      cout << " File is not found " << fname[0] << endl;
+
+    if(gSystem->FindFile(rootdir,fname[1]))
+      rChain[1]->Add(fname[1]);
+    else
+      cout << " File is not found " << fname[1] << endl;
+
   }
 
 
@@ -68,7 +77,17 @@
   TH1D *h1px_r[30];
   TH1D *h1px_m[30];
 
+  TH1D *h1phiphi_r[30];
+  TH1D *h1phiphi_m[30];
+  TH1D *h1phiphi_rm[30];
+
+  TH1D *h1phimid_r;
+  TH1D *h1phimid_m;
+  TH1D *h1phimid_rm;
+
+  TF1 *f1;
 }
+
 
 
 void phi()
@@ -205,7 +224,6 @@ void px()
 
 }
 
-
 void plot2D()
 {
   hpxp_rm->FitSlicesY();
@@ -222,13 +240,12 @@ void plot2D()
 
 void SaveCanvas(TString ext = ".png")
 {
-  cc0->SaveAs(printName+"RL"+ext);
-  cc1->SaveAs(printName+"MX"+ext);
-  cc2->SaveAs(printName+"RM"+ext);
-  cc3->SaveAs(printName+"FT"+ext);
-  cc4->SaveAs(printName+"SB"+ext);
+  if(cc0 != NULL)  cc0->SaveAs(printName+"RL"+ext);
+  if(cc1 != NULL)  cc1->SaveAs(printName+"MX"+ext);
+  if(cc2 != NULL)  cc2->SaveAs(printName+"RM"+ext);
+  if(cc3 != NULL)  cc3->SaveAs(printName+"FT"+ext);
+  if(cc4 != NULL)  cc4->SaveAs(printName+"SB"+ext);
 }
-
 
 void protonphi()
 {
@@ -251,7 +268,7 @@ void protonphi()
   hphip_rm->Draw("colz");
   cc2->SetLogz();
 
-
+ 
   auto cc3 = new TCanvas("cc3", "cc3 Slice",1400, 1200);
   cc3->Divide(6,5);
   auto cc4 = new TCanvas("cc4", "cc4 Slice sub",1400, 1200);
@@ -301,6 +318,139 @@ void protonphi()
   }
   hphip_r->Write();
   hphip_m->Write();
+  fout.Write();
+  fout.Close();
+
+}
+
+
+void midproton()
+{
+  gStyle->SetOptFit(1111);
+  
+  Int_t nbinx = 30; 
+  gROOT->cd();
+
+  auto hphip_r = new TH2D("hphip_r","Real ; rapidity; <phi>",nbinx,0,1.,60,-3.2,3.2);
+  auto hphip_m = new TH2D("hphip_m","Mixed; rapidity; <phi>",nbinx,0,1.,60,-3.2,3.2);
+
+
+  cc0->cd();
+  rChain[0] -> Draw("deltphi_b:rapid>>hphip_r","mtrack_b>0&&pid==2212","colz");
+
+  cc1->cd();
+  rChain[1] -> Draw("deltphi_b:rapid>>hphip_m","mtrack_b>0&&pid==2212","colz");
+
+  h1phimid_r = new TH1D(*(hphip_r->ProjectionY("",10,14)) );
+  h1phimid_m = new TH1D(*(hphip_m->ProjectionY("",10,14)) );
+  
+  h1phimid_r->SetName("h1phimid_r");
+  h1phimid_m->SetName("h1phimid_m");
+
+  h1phimid_r->SetDirectory(gROOT);
+  h1phimid_m->SetDirectory(gROOT);
+
+  h1phimid_r->SetLineColor(4);
+  h1phimid_m->SetLineColor(2);
+  
+  Float_t nrmf = h1phimid_r->Integral();
+  h1phimid_r->Scale(1./nrmf);
+
+  nrmf = h1phimid_m->Integral();
+  h1phimid_m->Scale(1./nrmf);
+
+  cc2->cd();
+  h1phimid_rm = new TH1D( (*h1phimid_r)-(*h1phimid_m));
+  h1phimid_rm->SetMaximum(0.002);
+  h1phimid_rm->SetMinimum(-0.002);
+  h1phimid_rm->Draw("");
+
+  Double_t v1 = -0.0002;
+  Double_t v2 = -0.0001;
+  Double_t xoff = 0.;
+
+  f1 = new TF1("f1","[3]+2*[0]*cos((x-[2]))+2*[1]*cos(2*(x-[2]))",-3.2,3.2);
+  f1->SetParameter(0,v1);
+  f1->SetParameter(1,v2);
+  f1->SetParameter(2,xoff);
+  f1->SetParameter(3,100);
+
+  h1phimid_rm->Fit("f1");
+  h1phimid_rm->Fit("f1");
+
+}
+
+
+void phiphi()
+{
+  Int_t nbinx = 30;
+
+  auto hphiphi_r = new TH2D("hphiphi_r","Real ; dPhi_beam; d(Phi_t - Phi_b)",nbinx,0.,6.3,60,0.,6.3);
+  auto hphiphi_m = new TH2D("hphiphi_m","Mixed; dPhi_beam; d(Phi_t - Phi_b)",nbinx,0.,6.3,60,0.,6.3);
+  
+
+  cc0->cd();
+  rChain[0]->Draw("TVector2::Phi_0_2pi(unitP_t.Phi()-unitP_b.Phi()):unitP_b.Phi()>>hphiphi_r","mtrack_b>0&&mtrack_t>0&&pid==2212","colz");
+
+  cc1->cd();
+  rChain[1]->Draw("TVector2::Phi_0_2pi(unitP_t.Phi()-unitP_b.Phi()):unitP_b.Phi()>>hphiphi_m","mtrack_b>0&&mtrack_t>0&&pid==2212","colz");
+
+  cc2->cd();
+  TH2D *hphiphi_rm = new TH2D( (*hphiphi_r)/(*hphiphi_m) );
+  hphiphi_rm->SetName("hphiphi_rm");
+  hphiphi_rm->SetTitle("REAL/MiXed");
+  hphiphi_rm->Draw("colz");
+  cc2->SetLogz();
+
+  auto cc3 = new TCanvas("cc3", "cc3 Slice",1400, 1200);
+  cc3->Divide(6,5);
+  auto cc4 = new TCanvas("cc4", "cc4 Slice sub",1400, 1200);
+  cc4->Divide(6,5);
+
+  printName = printHeader+"_phiphi";
+  TFile fout(printName+".root","recreate");
+
+  Int_t k = 0;
+  while(k <= 29){
+    cc3->cd(k+1);
+    h1phiphi_r[k] = new TH1D(*(hphiphi_r->ProjectionY("",k,k+1)) );
+    h1phiphi_m[k] = new TH1D(*(hphiphi_m->ProjectionY("",k,k+1)) );
+    
+    h1phiphi_r[k]->SetName(Form("h1phiphi_r%d",k));
+    h1phiphi_m[k]->SetName(Form("h1phiphi_m%d",k));
+
+    h1phiphi_r[k]->SetDirectory(gROOT);
+    h1phiphi_m[k]->SetDirectory(gROOT);
+
+    h1phiphi_r[k]->SetLineColor(4);
+    h1phiphi_m[k]->SetLineColor(2);
+  
+    Float_t nrmf = h1phiphi_r[k]->Integral();
+    h1phiphi_r[k]->Scale(1./nrmf);
+
+    nrmf = h1phiphi_m[k]->Integral();
+    h1phiphi_m[k]->Scale(1./nrmf);
+
+    Double_t hrng = std::max( h1phiphi_r[k] -> GetMaximum(), h1phiphi_m[k] -> GetMaximum() );
+  
+    h1phiphi_r[k]->SetMaximum(hrng);
+    h1phiphi_r[k]->Draw();
+    h1phiphi_m[k]->Draw("same");
+
+    cc4->cd(k+1);
+    h1phiphi_rm[k] = new TH1D( (*h1phiphi_r[k])-(*h1phiphi_m[k]));
+    h1phiphi_rm[k]->SetMaximum(0.01);
+    h1phiphi_rm[k]->SetMinimum(-0.01);
+    h1phiphi_rm[k]->Draw("e");
+
+    h1phiphi_rm[k]->SetName(Form("h1phiphi_rm%d",k));
+    h1phiphi_rm[k]->SetDirectory(gROOT);
+    h1phiphi_rm[k]->Write();
+
+    k++;
+  }
+  hphiphi_r->Write();
+  hphiphi_m->Write();
   fout.Write();
   fout.Close();
 

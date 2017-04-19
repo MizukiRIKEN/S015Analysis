@@ -44,14 +44,22 @@
   if( sAsm == "1") sAsm="";
 
   for(Int_t i = 0; i < (Int_t)lrun.size(); i++){
-    fname[0] = Form("../data/run%d_rdflw"+sAsm+"v"+sVer+".root",lrun.at(i));
-    fname[1] = Form("../data/run%d_mxflw"+sAsm+"v"+sVer+".root",lrun.at(i));
+    TString rootdir = "../data";
+    fname[0] = Form("run%d_rdflw"+sAsm+"v"+sVer+".root",lrun.at(i));
+    fname[1] = Form("run%d_mxflw"+sAsm+"v"+sVer+".root",lrun.at(i));
 
     cout << fname[1] << endl;
     cout << fname[0] << endl;
 
-    rChain[0]->Add(fname[0]);
-    rChain[1]->Add(fname[1]);
+    if(gSystem->FindFile(rootdir,fname[0]))
+      rChain[0]->Add(fname[0]);
+    else
+      cout << " File is not found " << fname[0] << endl;
+
+    if(gSystem->FindFile(rootdir,fname[1])) 
+      rChain[1]->Add(fname[1]);
+    else
+      cout << " File is not found " << fname[1] << endl;
 
   }
 
@@ -214,8 +222,8 @@ void dphibt(TString cut="", TString opt="")
   //  plot1D("TVector2::Phi_mpi_pi(unitP_b.Phi()-unitP_t.Phi())","mtrack_b>0&&mtrack_t>0"+cut);                                                      
   plot1D("TVector2::Phi_0_2pi(unitP_b.Phi()-unitP_t.Phi())","mtrack_b>0&&mtrack_t>0"+cut,opt);
 
-  auto ccp = new TCanvas("ccp", "comparison 2",700, 600);
-  ccp->cd();
+  auto cc3 = new TCanvas("cc3", "comparison 3",700, 600);
+  cc3->cd();
   dvd_01 -> Draw(opt);
 
 }
@@ -269,7 +277,7 @@ void SetRange(TString param, Int_t *nbin, Double_t *range)
   }
   else {
     *nbin = 60;
-    if(fVer <= 6.2) {
+    if((fVer <= 6.2 && sAsm == "1") || (sAsm == "2" && param(param.Length()-6,6) != ".Phi()" )) {
       range[0] = -3.2; range[1] = 3.2;
     }
     else {
@@ -296,9 +304,9 @@ void Multiplicity(TString stitle = "")
 
 void SaveCanvas(TString ext = ".png")
 {                                                                                                                                                
-  cc0->SaveAs(printName+"RL"+ext);
-  cc1->SaveAs(printName+"MX"+ext);
-  cc3->SaveAs(printName+"RM"+ext);
+  if(cc0 != NULL) cc0->SaveAs(printName+"RL"+ext);
+  if(cc0 != NULL) cc1->SaveAs(printName+"MX"+ext);
+  if(cc0 != NULL) cc3->SaveAs(printName+"RM"+ext);
 }                                                                                                                                                 
 
 

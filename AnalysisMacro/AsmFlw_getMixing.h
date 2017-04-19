@@ -1,6 +1,9 @@
 #ifndef  ASMPLW_GETAZMCOLL
 #define  ASMPLW_GETAZMCOLL
 
+#include "TVector3.h"
+#include "TVector2.h"
+
 // Reading tree
 TClonesArray *aParticleArray = NULL;
 TClonesArray *mixParticleArray = NULL;
@@ -25,6 +28,7 @@ Bool_t  bMix;  // kTRUE mixing kFALSE real data
 TString sVer;
 TString sAsm;
 Bool_t  BeamAngle;
+Int_t   iAsm;
  
 TChain *fChain;
 Int_t   nEntry;

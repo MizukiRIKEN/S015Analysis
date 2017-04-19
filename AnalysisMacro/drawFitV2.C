@@ -1,12 +1,16 @@
 {
   //  TString fname = "FlwRUN2900m9_phi.root";
-  TString fname = "FlwRUN2900m9_prtnphi"; 
+  //TString fname = "FlwRUN2900m9_prtnphi"; 
   //  TString fname = "FlwRUN2331m4_prtnphi"; 
-
+  //  TString fname = "Flw2v2900m9_prtnphi";
+  //  TString fname = "Flw2v2900m27_prtnphi";
+  TString fname = "Flw2v2900m30_prtnphi";
 
   TFile *fin = new TFile(fname+".root");
 
   TH2D *hphip_r = (TH2D*)gROOT->FindObject("hphip_r");
+  if(!hphip_r) exit(0);
+
   TH1D *p1 = hphip_r->ProjectionX();
 
 
@@ -28,6 +32,8 @@
 		     6.34506e-05,-1.22038e-05,1.77018e-05,-5.66731e-05,-7.57708e-05,2.74097e-06};
 
   Double_t xoff[30];
+  Double_t v1e[30];
+  Double_t v2e[30];
 
   Int_t m = 0;
   Int_t k = 0;
@@ -48,10 +54,12 @@
     
       phi_rm[k]->Draw();
 
-      if( k > 2) {
+      if( k > 2 && k < 25) {
 	rapid[m] = p1->GetBinCenter(k+1);
 	v1[m]   = f1[k]->GetParameter(0);
+	v1e[m]  = f1[k]->GetParError(0);
 	v2[m]   = f1[k]->GetParameter(1);
+	v2e[m]  = f1[k]->GetParError(1);
 	xoff[m] = f1[k]->GetParameter(2);
 	m++;
       }
@@ -61,32 +69,38 @@
 
   TGraph *gv1 = new TGraph(m, rapid, v1);
   TGraph *gv2 = new TGraph(m, rapid, v2);
+  //  TGraphErrors *gv1 = new TGraphErrors(m, rapid, v1, 0, v1e);
+  //  TGraphErrors *gv2 = new TGraphErrors(m, rapid, v2, 0, v1e);
 
   TCanvas *cc1 = new TCanvas("cc1","v1 and v2",700,500);
-  //  cc1->Divide(1,2);
+  cc1->Divide(1,2);
   
-  //  cc1->cd(1);
+  cc1->cd(1);
   gv1->SetMarkerStyle(20);
   gv1->SetLineColor(2);
   gv1->SetMarkerColor(2);
   gv1->SetTitle(";rapidity;v1");  
-  gv1->Draw("");
+  gv1->SetMaximum(0.002);
+  gv1->SetMinimum(-0.002);
+  gv1->Draw("APL");
 
 
-  //  cc1->cd(2);
+  cc1->cd(2);
   gv2->SetMarkerStyle(20);
   gv2->SetLineColor(4);
   gv2->SetMarkerColor(4);
   gv2->SetTitle(";rapidity;v2");
-  gv2->Draw("pl");
+  gv2->SetMaximum(0.0005);
+  gv2->SetMinimum(-0.0005);
+  gv2->Draw("APL");
   
-  auto aLeg = new TLegend(0.1,0.8,0.3,0.9);
-  TString fleg[2];
-  fleg[0] = " v1 ";
-  fleg[1] = " v2 ";
-  aLeg->AddEntry(gv1,fleg[0],"lp");
-  aLeg->AddEntry(gv2,fleg[1],"lp");
-  aLeg->Draw();
+  // auto aLeg = new TLegend(0.1,0.8,0.3,0.9);
+  // TString fleg[2];
+  // fleg[0] = " v1 ";
+  // fleg[1] = " v2 ";
+  // aLeg->AddEntry(gv1,fleg[0],"lp");
+  // aLeg->AddEntry(gv2,fleg[1],"lp");
+  // aLeg->Draw();
 
 
   cc1->SaveAs(fname+"FS.png");

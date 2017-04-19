@@ -14,26 +14,34 @@ void AsmFlw_getMixing(Int_t nmax = -1)
   sRun = gSystem -> Getenv("RUN");
   sAsm = gSystem -> Getenv("ASMV");
   sVer = gSystem -> Getenv("VER");
-  
+
 
   TString sMix = gSystem -> Getenv("MIX");
+  TString sRot = gSystem -> Getenv("ROT");
 
-  if(sRun =="" || sVer == "" ||sMix == "" ) {
+  if(sRun =="" || sVer == "" ||sMix == "" ||sAsm == "" || sRot == "") {
     cout << " Please type " << endl;
-    cout << "$ RUN=#### ASMV= 1 or 2(-2: w/o rotation) MIX=0(real) or 1(mix) VER=#.# root AsmFlw_getMixing(Number of event) " << endl;
+    cout << "$ RUN=#### ASMV= 1 or 2(-2: w/o rotation) VER=#.# MIX=0(real) or 1(mix) ROT=0(not rotate) or 1(rotate)  root AsmFlw_getMixing(Number of event) " << endl;
     exit(0);
   }
 
-  // Set default to 2.
-  if( sAsm == "" )  sAsm = "2";
 
-  if( sAsm == "2")
-    BeamAngle = kTRUE;
-  else if( sAsm == "-2"){
-    sAsm = 2;
+  cout << "RUN = " << sRun << " Assemble v" << sAsm 
+       << " with ver " << sVer  << " mix = " << sMix 
+       << " rotation " << sRot
+       << endl;
+
+
+  // Set default to 2.
+
+  iAsm = atoi(sAsm);
+
+  if( sRot == "0" )
     BeamAngle = kFALSE;
-  }
-  else {
+  else
+    BeamAngle = kTRUE;
+
+  if( iAsm == 1) {
     sAsm = "";
     BeamAngle = kFALSE;
   }
@@ -44,9 +52,6 @@ void AsmFlw_getMixing(Int_t nmax = -1)
   else bMix = kFALSE;
 
   iRun = atoi(sRun);
-
-  cout << "RUN = " << sRun << " Assemble v" << sAsm 
-       << " with ver " << sVer  << " mix = " << sMix << endl;
 
   Open();
   Int_t mEvt = GetMultiplicityDistribution();
@@ -106,7 +111,7 @@ void AsmFlw_getMixing(Int_t nmax = -1)
       STParticle *aPart1;
       Int_t mixEvt = ievt;
 
-      //      cout << " event " << ievt << endl;
+      //     cout << " event " << ievt << endl;
 
       if( bMix ) aPart1 = GetMixedTrack(&mixEvt); // Get a track randomly
       else       aPart1 = (STParticle*) aParticleArray -> At(nLoop);
@@ -129,6 +134,7 @@ void AsmFlw_getMixing(Int_t nmax = -1)
       TVector2 ppt_rot;
     // Rotate along beam angle
       if( BeamAngle ){
+
 	if( !bMix ){  
 	  aX = ProjA/1000.;
 	  bY = ProjB/1000.;
@@ -140,13 +146,12 @@ void AsmFlw_getMixing(Int_t nmax = -1)
 
 	ppt_rot = TVector2(pp_rot.X(), pp_rot.Y());
 
-	//	vpt = pp_rot.Pt();
+	vpt = pp_rot.Pt();
+	pp  = pp_rot;
+	ppt = ppt_rot;
+
       }
       
-	// cout << "vpt " << vpt 
-	//      << " aPart1->GetBestTrackFlag() "<< aPart1->GetBestTrackFlag() 
-	//      << endl;
-
       if(aPart1 && aPart1->GetBestTrackFlag() && aPart1->GetLinearPID()>1000
        	 && vpt < 500){
 
@@ -269,10 +274,10 @@ void Open()
 
   fChain = new TChain("flw");
   TString fn;
-  if(sAsm == "1")
+  if( iAsm == 1)
     fn = Form("../data/run%d_flw_v"+sVer(0,1)+".root",iRun);
   else
-    fn = Form("../data/run%d_flw_"+sAsm+"v"+sVer(0,1)+".root",iRun);
+    fn = Form("../data/run%d_flw_%dv"+sVer(0,1)+".root",iRun,iAsm);
 
 
   fChain -> Add(fn);
@@ -290,14 +295,16 @@ void Open()
   fChain->SetBranchAddress("ntrack",ntrack);
   fChain->SetBranchAddress("kymult",&kymult);
 
- if( BeamAngle ){
-    fChain->SetBranchAddress("ProjA",&ProjA);
-    fChain->SetBranchAddress("ProjB",&ProjB);
+  if( iAsm > 1) {
     fChain->SetBranchAddress("aoq",&aoq);
     fChain->SetBranchAddress("z",&z);
-
-    p_rot  = new TClonesArray("TVector3",150);
+    fChain->SetBranchAddress("ProjA",&ProjA);
+    fChain->SetBranchAddress("ProjB",&ProjB);
   }
+
+  if( BeamAngle )
+    p_rot  = new TClonesArray("TVector3",150);
+  
 
 
 }
@@ -430,6 +437,13 @@ void OutputTree(Int_t nmax)
 
   //-- output                                                                                                              
   mflw->Branch("irun",&iRun,"irun/I");
+  if( iAsm > 1) {
+    mflw->Branch("aoq",&aoq,"aoq/D");
+    mflw->Branch("z",&z,"z/D");
+    // mflw->Branch("aX",&aX,"aX/D");
+    // mflw->Branch("bY",&bY,"bY/D");
+  }
+
   mflw->Branch("numGoodTrack",&numGoodTrack);
   mflw->Branch("mtrack",&mtrack,"mtrack/I");
   mflw->Branch("mtrack_t",&mtrack_t,"mtrack_t/I");
@@ -508,7 +522,7 @@ STParticle *GetMixedTrack(Int_t *ival)
     Int_t nmixTrack = aParticleArray->GetEntries();
     Int_t imixTrack = (Int_t)pran.Uniform(0,nmixTrack);
 
-    if(sAsm == "2") {
+    if( BeamAngle ) {
       aX = ProjA/1000.;
       bY = ProjB/1000.;
     }
