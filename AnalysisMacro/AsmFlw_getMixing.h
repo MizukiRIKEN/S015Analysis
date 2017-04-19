@@ -20,8 +20,10 @@ void Initialize();
 void OutputTree(Int_t val);
 Int_t GetRandomNumTrack();
 Int_t GetMultiplicityDistribution();
+Bool_t DefineVersion();
 STParticle* GetMixedTrack(Int_t *ival);
 
+Int_t  iVer[3];
 
 TString sRun;
 Bool_t  bMix;  // kTRUE mixing kFALSE real data

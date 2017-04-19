@@ -11,14 +11,13 @@ void Setup()
   sRun = gSystem -> Getenv("RUN");
   sVer = gSystem -> Getenv("VER");
 
-  if( sRun=="" || sVer=="") {
+  if( sRun=="" || sVer=="" || !DefineVersion() ) {
     cout << "Plase type " << endl;
-    cout << "$ RUN=#### VER=# root Assemble_flwv2.C" << endl;
+    cout << "$ RUN=#### VER=#.# root Assemble_flwv2.C" << endl;
     exit(0);
   }
 
   iRun = atoi(sRun);
-
 
   BigRIPS  = kTRUE;  //kFALSE;
   KyotoArry= kTRUE;
@@ -244,7 +243,7 @@ void OutputTree(Int_t nmax)
   TString sdeb = ".s";
   if(nmax < 0)  sdeb = "";
 
-  TString foutname = "../data/run"+sRun+"_flw_2v"+sVer+sdeb+".root";
+  TString foutname = "../data/run"+sRun+"_flw_v"+sVer+sdeb+".root";
 
   fout = new TFile(foutname,"recreate");
   flw  = new TTree("flw","Beam and TPC track");
@@ -611,6 +610,32 @@ void SetTPC()
 
   fChain -> SetBranchAddress("STTrack", &trackArray);
   fChain -> SetBranchAddress("STVertex",&vertexArray);
+
+}
+
+Bool_t DefineVersion()
+{
+  Bool_t bfound = kFALSE;
+
+  TString ver = sVer + ".";
+  
+  for ( Int_t i = 0; i < 2; i++) {
+    if( ver.First(".") < 0 ) break;
+
+    Ssiz_t end = ver.First(".")  ;
+    TString ver1 = ver(0, end);
+
+    ver = ver(end+1, ver.Length());
+
+    iVer[i] = atoi(ver1);
+
+    if(i==1) bfound = kTRUE;
+  }
+  
+  if(!bfound)
+    cout << " missing version number : " << iVer[0] << "." << iVer[1]  << endl;
+
+  return bfound;
 
 }
 

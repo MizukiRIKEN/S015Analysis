@@ -3,25 +3,30 @@
 //   AsmFlw_getMixing.C
 // (c) Mizuki Kurata-Nishimura 
 //----------------------------------------
+// version 0.0
 // An input file comes from Assemble_flwv1.C (ASMV=1)
+// version 1.0
 // An input file comes from Assemble_flwv2.C (ASMV=2) since 11 April 2017
 //
 // RUN=#### MIX=0 root AsmFlw_getMixing.C or AsmFlw_getMixing.C\(100\)
 //         Real create a multiplicity distribution  
+// version 2.0
+// parameter ASMV is involved in VER#.#.#
+// 
+//
 //----------------------------------------------------------------------
 void AsmFlw_getMixing(Int_t nmax = -1)
 {
   sRun = gSystem -> Getenv("RUN");
-  sAsm = gSystem -> Getenv("ASMV");
+  //  sAsm = gSystem -> Getenv("ASMV");
   sVer = gSystem -> Getenv("VER");
-
-
   TString sMix = gSystem -> Getenv("MIX");
   TString sRot = gSystem -> Getenv("ROT");
 
-  if(sRun =="" || sVer == "" ||sMix == "" ||sAsm == "" || sRot == "") {
+
+  if(sRun =="" || sVer == "" ||sMix == "" || sRot == "" || !DefineVersion()) {
     cout << " Please type " << endl;
-    cout << "$ RUN=#### ASMV= 1 or 2(-2: w/o rotation) VER=#.# MIX=0(real) or 1(mix) ROT=0(not rotate) or 1(rotate)  root AsmFlw_getMixing(Number of event) " << endl;
+    cout << "$ RUN=#### VER=#.#.# MIX=0(real) or 1(mix) ROT=0(not rotate) or 1(rotate)  root AsmFlw_getMixing(Number of event) " << endl;
     exit(0);
   }
 
@@ -32,17 +37,15 @@ void AsmFlw_getMixing(Int_t nmax = -1)
        << endl;
 
 
-  // Set default to 2.
 
-  iAsm = atoi(sAsm);
+  // Set default to 2.
 
   if( sRot == "0" )
     BeamAngle = kFALSE;
   else
     BeamAngle = kTRUE;
 
-  if( iAsm == 1) {
-    sAsm = "";
+  if( iVer[0] == 1) {
     BeamAngle = kFALSE;
   }
 
@@ -274,10 +277,12 @@ void Open()
 
   fChain = new TChain("flw");
   TString fn;
-  if( iAsm == 1)
-    fn = Form("../data/run%d_flw_v"+sVer(0,1)+".root",iRun);
-  else
-    fn = Form("../data/run%d_flw_%dv"+sVer(0,1)+".root",iRun,iAsm);
+  // if( iAsm == 1)
+  //   fn = Form("../data/run%d_flw_v"+sVer(0,3)+".root",iRun);
+  // else if( iAsm == 2)
+  //   fn = Form("../data/run%d_flw_%dv"+sVer(0,1)+".root",iRun,iAsm);
+  // else
+    fn = Form("../data/run%d_flw_v"+sVer(0,3)+".root",iRun,iAsm);
 
 
   fChain -> Add(fn);
@@ -358,7 +363,7 @@ void Initialize()
 Int_t GetMultiplicityDistribution()
 {
   // Multplicity histgram
-  TString mHistFile = Form("run%d.ngt_v"+sVer(0,1)+".root",iRun);
+  TString mHistFile = Form("MultRoot/run%d.ngt_v"+sVer(0,3)+".root",iRun);
   TString hf = mHistFile;
 
   Int_t nEvt = 0;
@@ -403,11 +408,11 @@ void OutputTree(Int_t nmax)
 
   if( bMix ) {
     foutname += "mxflw";
-    foutname += sAsm+"v"+sVer+".root";
+    foutname += "_v"+sVer+".root";
   }
   else {
     foutname += "rdflw";
-    foutname += sAsm+"v"+sVer+sdeb+".root";
+    foutname += "_v"+sVer+sdeb+".root";
   }
   
   TString fo = foutname;
@@ -539,4 +544,33 @@ STParticle *GetMixedTrack(Int_t *ival)
   }
   *ival = mevt; 
   return mixPart;
+}
+
+
+Bool_t DefineVersion()
+{
+  Bool_t bfound = kFALSE;
+
+  TString ver = sVer + ".";
+  
+  for ( Int_t i = 0; i < 3; i++) {
+    if( ver.First(".") < 0 ) break;
+
+    Ssiz_t end = ver.First(".")  ;
+    TString ver1 = ver(0, end);
+
+    ver = ver(end+1, ver.Length());
+
+    iVer[i] = atoi(ver1);
+
+
+    if(i==2) bfound = kTRUE;
+
+  }
+  
+  if(!bfound)
+    cout << " missing version number : " << iVer[0] << "." << iVer[1] << "." << iVer[2] << endl;
+
+  return bfound;
+
 }

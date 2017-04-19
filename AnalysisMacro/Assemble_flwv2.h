@@ -148,12 +148,13 @@ Bool_t    CheckBDCvsTrackCorrelation(TVector3 trackatTarget);
 void      SetTPC();
 void      SetKATANARoot();
 void      SetKATANARoot_bt();
-Bool_t     SetKyotoArray();
-Bool_t     SetKyotoMultiplicity();
+Bool_t    SetKyotoArray();
+Bool_t    SetKyotoMultiplicity();
 void      SetBigRIPS();
 
 void      Initialize(Int_t ievt);
 void      OutputTree(Int_t nmax);
+Bool_t    DefineVersion();
 
 
 
@@ -181,6 +182,7 @@ std::vector<Int_t>gTgTrack;
 TString sRun;
 TString sVer;
 Int_t   iRun;
+Int_t   iVer[2];
 
 Bool_t  BigRIPS;
 Bool_t  KyotoArry;

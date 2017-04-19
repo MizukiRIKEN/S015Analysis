@@ -3,23 +3,23 @@
  
 
   TString arun = gSystem -> Getenv("RUN");
-  TString sAsm = gSystem -> Getenv("ASMV");
   TString sVer = gSystem -> Getenv("VER");
 
-  Float_t fVer = atof(sVer);
+  
 
-  if( arun=="" || sVer=="" || sAsm=="" || arun.Length() == 4) {
+  if( arun=="" || sVer=="" || arun.Length() == 4) {
     cout << "Plase type " << endl;
-    cout << "$ RUN={####} ASMV=# VER=#.# root compRDvsMXplot.C" << endl;
+    cout << "$ RUN={####} VER=#.#.# root compRDvsMXplot.C" << endl;
     exit(0);
   }
 
-
+  TString ssVer = sVer(sVer.First(".")+1, sVer.Length());
+  Float_t fVer  = atoi(ssVer);
 
   Int_t nrun = (arun.Length()-1)/5;
   cout << arun << "-> nrun " << nrun << endl;;
 
-  TString printHeader = "Flw"+sAsm+"vRUN"+arun(1,4)+ Form("m%d",nrun); 
+  TString printHeader = "FlwRUN"+arun(1,4)+ Form("m%d",nrun) + "_v" + sVer; 
   TString printName ;
   vector<Int_t> lrun;
   Int_t ist = 1;
@@ -41,12 +41,10 @@
 
   TString fname[2];
 
-  if( sAsm == "1") sAsm="";
-
   for(Int_t i = 0; i < (Int_t)lrun.size(); i++){
     TString rootdir = "../data";
-    fname[0] = Form("run%d_rdflw"+sAsm+"v"+sVer+".root",lrun.at(i));
-    fname[1] = Form("run%d_mxflw"+sAsm+"v"+sVer+".root",lrun.at(i));
+    fname[0] = Form("run%d_rdflw_v"+sVer+".root",lrun.at(i));
+    fname[1] = Form("run%d_mxflw_v"+sVer+".root",lrun.at(i));
 
     cout << fname[1] << endl;
     cout << fname[0] << endl;
@@ -277,7 +275,7 @@ void SetRange(TString param, Int_t *nbin, Double_t *range)
   }
   else {
     *nbin = 60;
-    if((fVer <= 6.2 && sAsm == "1") || (sAsm == "2" && param(param.Length()-6,6) != ".Phi()" )) {
+    if((fVer <= 6.2 && sVer(0,1) == "1") || (sVer(0,1) == "2" && param(param.Length()-6,6) != ".Phi()" )) {
       range[0] = -3.2; range[1] = 3.2;
     }
     else {
