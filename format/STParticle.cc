@@ -13,7 +13,6 @@ ClassImp(STParticle)
 STParticle::STParticle()
 {
   Clear();
-  //  fTrack = *this;
 }
 
 STParticle::STParticle(STTrack *atrack)
@@ -31,7 +30,6 @@ void STParticle::CheckTrackonTarget()
     fTargetXY = 1;
   else
     fTargetXY = 0;
-
 }
 
 
@@ -52,6 +50,8 @@ void STParticle::Clear(Option_t *option)
   fgotoKatana   = 0;
   fgotoKyoto    = 0;
 
+  fpipid       = 0;
+  fPID         = 0;
 }
 
 void STParticle::SetTrack(STTrack *atrack)
@@ -72,6 +72,8 @@ void STParticle::SetProperty()
   CheckTrackonTarget();
   CheckKATANAHit();
   CheckKYOTOHit();
+
+  SetPiPID();
 }
 
 void STParticle::SetLinearPID()
@@ -92,7 +94,7 @@ void STParticle::SetLinearPID()
     }
     else if(flnPIDval <= 14.3 || fP <= 430) { // proton
       flnPID = 2212;
-      fMass  = 938.272;;
+      fMass  = 938.272;
     }
     else if(flnPIDval <=15.1) { // deuteron
       flnPID = 10020;
@@ -122,6 +124,39 @@ void STParticle::SetLinearPID()
       flnPID = -211;
   }
 
+  fPID = flnPID;
+
+}
+
+void  STParticle::SetPID(Int_t value)
+{
+  fPID = value;
+  if(fPID == 12212)  {
+    fMass = 938.272;
+  }
+}
+
+Double_t STParticle::GetpsudoRapidity()
+{
+  TVector3 pp;
+  if( bRotated )
+    pp = fRotatedMomentum;
+  else
+    pp = STTrackCandidate::GetMomentum();
+
+  fpsudoRapidity = -log( tan((pp.Theta()/2)) );
+  return fpsudoRapidity;
+}
+
+ 
+Double_t STParticle::GetRapidity()
+{
+  if( bRotated ) {
+    fphi  = fRotatedMomentum.Phi();
+    fP    = fRotatedMomentum.Mag();
+    fPz   = fRotatedMomentum.Z();
+  }
+
   if(fMass != 0 ){
     fEtotal   = sqrt(fMass*fMass + fP*fP);
     fRapidity = 0.5 * log( (fEtotal + fPz) / (fEtotal - fPz) );
@@ -130,41 +165,34 @@ void STParticle::SetLinearPID()
     fEtotal = 0;
     fRapidity = -10.;
   }
-  
+
+  //  std::cout << " pz " << fPz << std::endl;
+
+  return fRapidity;
 }
 
-void  STParticle::RotateMomentum(Double_t value)
+void  STParticle::RotateAlongBeamDirection(Double_t valuex, Double_t valuey)
 {
-  TRotation rotP;
-  Double_t R_angle = value;
-  rotP.RotateY(R_angle);
+  fRotatedMomentum = STTrackCandidate::GetMomentum();
 
-  //  fRotatedMomentum  = rotP * fTrack->GetTargetPlaneMomentum();
-  fRotatedMomentum  = rotP * STTrackCandidate::GetMomentum();
+  fRotatedMomentum.RotateY(-valuex);
+  fRotatedMomentum.RotateX(-valuey);
 
-  frphi = fRotatedMomentum.Phi();
+  fRotatedPt = TVector2(fRotatedMomentum.X(),fRotatedMomentum.Y());
+
+  bRotated = kTRUE;
 }
 
-void STParticle::CheckKATANAHit()
+void STParticle::SetPiPID()
 {
-  if( (fKatanax >= -981 && fKatanax <= 340) &&
-      (fKatanay <= -34  && fKatanay >= -430))
+  //pion cut                                                                                                                                               
+  // TFile *gcutPiFile = new TFile("/cache/scr/spirit/mizuki/SpiRITROOT/macros/AnalysisMacro/gcutPip.root");
+  // TCutG *gPip = (TCutG*)gcutPiFile->Get("gPi");
+  // gcutPiFile->Close();
 
-    fgotoKatana = 1;
-}
+  // if(gPip->IsInside(fdEdx,fP))
+  //   fpipid = 1;
+  // else
+  //   fpipid = 0;
 
-void STParticle::CheckKYOTOHit()
-{
-  if( fKyotoLx == 758 && 
-      (fKyotoLz >= 168  && fKyotoLz <= 1685 ) &&
-      (fKyotoLy <= -51  && fKyotoLy >= -501))
-    
-    fgotoKyoto = 1;
-  
-  else if( fKyotoRx == - 758 && fKyotoRz > -1000 &&
-	   (fKyotoRz >= 168  && fKyotoRz <= 1685 ) &&
-	   (fKyotoRy <= -51  && fKyotoRy >= -501))
-    
-    
-    fgotoKyoto = -1;
 }

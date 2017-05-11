@@ -6,6 +6,8 @@
 
 #ifndef STPARTICLE
 #define STPARTICLE
+#include "TCutG.h"
+#include "TFile.h"
 
 #include "TVector3.h"
 #include "TRotation.h"
@@ -34,26 +36,32 @@ public:
 
 public:
   void     SetTrack(STTrack *atrack);
-  void     RotateMomentum(Double_t value);
+  void     RotateAlongBeamDirection(Double_t valuex, Double_t valuey);
   void     SetP(Double_t value)          {fP = value;}
+  void     SetPiPID();
+  Int_t    GetPiPID()                    {return fpipid;}
+
+  void     SetPID(Int_t value);
+  Int_t    GetPID()                      {return fPID;}
+
+  Double_t GetRapidity();
+  Double_t GetpsudoRapidity();
+
+
+  Double_t GetEtotal()                   {return fEtotal;}
+
   Double_t GetP()                        {return fP;}
   void     SetdEdx(Double_t value)       {fdEdx = value;}
   Double_t GetdEdx()                     {return fdEdx;}
   Int_t    GetLinearPID()                {return flnPID;}
 
-
-  Double_t GetRapidity()                 {return fRapidity;}
-  Double_t GetEtotal()                   {return fEtotal;}
-  
-
   void     SetRotatedMomentum(TVector3 value)   {fRotatedMomentum = value;}
   TVector3 GetRotatedMomentum()                 {return fRotatedMomentum;}
 
+  TVector2 GetRotatedPt()                       {return fRotatedPt;}
+
   void  SetBeamonTargetFlag(Int_t value)        {fBeamonTarget = value;}
   Int_t GetBeamonTargetFlag()                   {return fBeamonTarget;}
-
-  
-
 
   void  SetVertexAtTargetFlag(Int_t value)      {fVatTarget = value;}
   Int_t GetVertexAtTargetFlag()                 {return fVatTarget;}
@@ -103,6 +111,8 @@ public:
 
 
 private:
+  Bool_t    bRotated = kFALSE;
+
   // Track XY
   Double_t trktgt_right =  -12.; //!
   Double_t trktgt_left  =   12.; //!
@@ -113,15 +123,21 @@ private:
 private:
   STTrack *fTrack; //!
   TVector3 fRotatedMomentum;
+  TVector2 fRotatedPt;
 
   Double_t fP;
   Double_t fdEdx;
   Double_t fphi;
   Double_t frphi;
+  Int_t    fPID;
   Int_t    flnPID;
   Double_t flnPIDval;
   Double_t fRapidity;
+  Double_t fpsudoRapidity;
   Double_t fEtotal;
+
+  Int_t    fpipid;
+
 
   //flags
   Int_t    fBeamonTarget; //flag for beam tracked by BDC goes on the target
