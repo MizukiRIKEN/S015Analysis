@@ -253,7 +253,9 @@ void SetRange(TString param, Int_t *nbin, Double_t *range)
   }
   else if(param == "px" || param == "py" || param(1,2) == "px" ) {
     *nbin = 200; range[0] = -500.;range[1] = 500;
-    cout << " param " << param << endl;
+  }
+  else if( param == "p_rot.Pt()"){
+    *nbin = 200; range[0] = 0.;range[1] = 500;
   }
   else if(param == "mtrack" || param == "mtrack_t" || param== "mtrack_b") {
     *nbin = 50;  range[0] = 0.;   range[1] = 50;

@@ -18,7 +18,6 @@
 void AsmFlw_getMixing(Int_t nmax = -1)
 {
   sRun = gSystem -> Getenv("RUN");
-  //  sAsm = gSystem -> Getenv("ASMV");
   sVer = gSystem -> Getenv("VER");
   TString sMix = gSystem -> Getenv("MIX");
   TString sRot = gSystem -> Getenv("ROT");
@@ -106,10 +105,8 @@ void AsmFlw_getMixing(Int_t nmax = -1)
 
     while(kTRUE) {
 
-
       if(  bMix && numGoodTrack > nGoodTrack - 1 ) break;  // mGoodTrack-1
       if( !bMix && nLoop >=  nGoodTrack) break;
-
 
       STParticle *aPart1;
       Int_t mixEvt = ievt;
@@ -117,94 +114,76 @@ void AsmFlw_getMixing(Int_t nmax = -1)
       //     cout << " event " << ievt << endl;
 
       if( bMix ) aPart1 = GetMixedTrack(&mixEvt); // Get a track randomly
-      else       aPart1 = (STParticle*) aParticleArray -> At(nLoop);
-      
+      else {
+	aPart1 = (STParticle*) aParticleArray -> At(nLoop);
+	aX = ProjA/1000.;
+	bY = ProjB/1000.;
+      }
 
-      // updated a new version on 3 April 2017.
-      TVector3 pp(aPart1->GetMomentum().X(),
-		  aPart1->GetMomentum().Y(),
-		  aPart1->GetMomentum().Z());
+      TVector3 mom3  = aPart1->GetMomentum();
+      TVector2 momPt = TVector2(aPart1->GetRotatedMomentum().X(), aPart1->GetRotatedMomentum().Y());
 
-
-      TVector2 ppt(aPart1->GetMomentum().X(),
-		   aPart1->GetMomentum().Y());
-
-      Double_t vpt = pp.Pt();
-
-      Double_t psdrapid = -log( tan((pp.Theta()/2)) );
-
-      TVector3 pp_rot;
-      TVector2 ppt_rot;
     // Rotate along beam angle
       if( BeamAngle ){
-
-	if( !bMix ){  
-	  aX = ProjA/1000.;
-	  bY = ProjB/1000.;
-	}
-	
-	pp_rot = pp; 
-	pp_rot.RotateY(-aX);
-	pp_rot.RotateX(-bY);
-
-	ppt_rot = TVector2(pp_rot.X(), pp_rot.Y());
-
-	vpt = pp_rot.Pt();
-	pp  = pp_rot;
-	ppt = ppt_rot;
-
+	aPart1->RotateAlongBeamDirection(aX, bY);
+	mom3  = aPart1->GetRotatedMomentum();
+	momPt = aPart1->GetRotatedPt();
       }
-      
-      if(aPart1 && aPart1->GetBestTrackFlag() && aPart1->GetLinearPID()>1000
-       	 && vpt < 500){
 
+      Double_t psudr = -log( tan((mom3.Theta()/2))) ;
 
+      if(aPart1 && aPart1->GetBestTrackFlag() && aPart1->GetLinearPID()>1000) {
+	 //       	 && vpt < 500){
+       
 	numGoodTrack++;
 	if( bMix ) event.push_back(mixEvt);
 	else event.push_back(ievt);
 
-	pid.push_back(aPart1->GetLinearPID());
-	vPart.push_back(pp);
-	iphi.push_back(pp.Phi());
-	px.push_back(pp.X());
-	py.push_back(pp.Y());
-	pz.push_back(pp.Z());
-	pt.push_back(ppt);
-	mom.push_back(aPart1->GetP());
-	dedx.push_back(aPart1->GetTotaldEdx());
-	rapid.push_back(aPart1->GetRapidity());
-	etot.push_back(aPart1->GetEtotal());
-	prapid.push_back(psdrapid);
+	Int_t gpid = GetPID(aPart1->GetP(),aPart1->GetTotaldEdx()); // for temporal proton pid
+	if(gpid != 0){
+	  aPart1->SetPID(gpid);
+	  pid.push_back(gpid);
+	}
+	else
+	  pid.push_back(aPart1->GetLinearPID());
+
+	vPart.push_back(mom3);
+	iphi.push_back( mom3.Phi());
+	px.push_back(   mom3.X());
+	py.push_back(   mom3.Y());
+	pz.push_back(   mom3.Z());
+	pt.push_back(   momPt);
+
+	mom.push_back(   aPart1->GetP());
+	dedx.push_back(  aPart1->GetTotaldEdx());
+	rapid.push_back( aPart1->GetRapidity());
+	etot.push_back(  aPart1->GetEtotal());
+	prapid.push_back(psudr);
 
 
-	//rotated p
+	// before rotation
 	if( BeamAngle ) {
-	  TClonesArray &bp_rot = *p_rot;
-	  new(bp_rot[numGoodTrack-1]) TVector3(pp_rot);
-	  pt_rot.push_back(ppt_rot);
+	  TClonesArray &bp_org = *p_org;
+	  new(bp_org[numGoodTrack-1]) TVector3(aPart1->GetMomentum());
 
 	  theta_xz.push_back(aX);
 	  theta_yz.push_back(bY);
 	}
 	
-
-
-
-	unitP += pp.Unit();
+	unitP += mom3.Unit();
     	
 	//	cout << " ntrack " << numGoodTrack << endl;
-	if( pp.Z() < 400){
-	  unitP_t += ppt.Unit();
+	if( mom3.Z() < 400){
+	  unitP_t += momPt.Unit();
 	  mtrack_t++;	    
 	}
 	else {
-	  unitP_b += ppt.Unit();
+	  unitP_b += momPt.Unit();
 	  mtrack_b++;
-
 	}
 
-	if(aPart1->GetMomentum().Theta()<0.4) {
-	  unitP_lang += pp.Unit();
+	if(mom3.Theta()<0.4) {
+	  unitP_lang += mom3.Unit();
 	} 
       }    
       nLoop++;
@@ -274,6 +253,7 @@ void AsmFlw_getMixing(Int_t nmax = -1)
 
 void Open()
 {
+  LoadPIDFile();
 
   fChain = new TChain("flw");
   TString fn;
@@ -282,7 +262,7 @@ void Open()
   // else if( iAsm == 2)
   //   fn = Form("../data/run%d_flw_%dv"+sVer(0,1)+".root",iRun,iAsm);
   // else
-    fn = Form("../data/run%d_flw_v"+sVer(0,3)+".root",iRun,iAsm);
+    fn = Form("../data/run%d_flw_v"+sVer(0,3)+".root",iRun);
 
 
   fChain -> Add(fn);
@@ -300,7 +280,7 @@ void Open()
   fChain->SetBranchAddress("ntrack",ntrack);
   fChain->SetBranchAddress("kymult",&kymult);
 
-  if( iAsm > 1) {
+  if( iVer[0] > 1) {
     fChain->SetBranchAddress("aoq",&aoq);
     fChain->SetBranchAddress("z",&z);
     fChain->SetBranchAddress("ProjA",&ProjA);
@@ -308,7 +288,7 @@ void Open()
   }
 
   if( BeamAngle )
-    p_rot  = new TClonesArray("TVector3",150);
+    p_org  = new TClonesArray("TVector3",150);
   
 
 
@@ -349,8 +329,7 @@ void Initialize()
   etot.clear();
 
   if( BeamAngle ){
-    pt_rot.clear();
-    p_rot->Clear();
+    p_org->Clear();
 
     theta_xz.clear();
     theta_yz.clear();
@@ -398,6 +377,24 @@ Int_t GetMultiplicityDistribution()
 
 }
 
+Int_t GetPID(Double_t valx, Double_t valy)
+{
+  if(gProton){
+    if(gProton->IsInside(valx,valy))
+      return 12212;
+  }
+  return 0;
+}
+
+void LoadPIDFile()
+{
+  auto gcutFile = new TFile("gcutProton.root");
+  gProton=(TCutG*)gcutFile->Get("gProton");
+  gcutFile->Close();
+}
+
+
+
 void OutputTree(Int_t nmax)
 {
 
@@ -442,7 +439,7 @@ void OutputTree(Int_t nmax)
 
   //-- output                                                                                                              
   mflw->Branch("irun",&iRun,"irun/I");
-  if( iAsm > 1) {
+  if( iVer[0] > 1) {
     mflw->Branch("aoq",&aoq,"aoq/D");
     mflw->Branch("z",&z,"z/D");
     // mflw->Branch("aX",&aX,"aX/D");
@@ -476,7 +473,7 @@ void OutputTree(Int_t nmax)
   mflw->Branch("kymult",&kymult,"kymult/I");
 
   if( BeamAngle ) {
-    mflw->Branch("p_rot" ,&p_rot);
+    mflw->Branch("p_org" ,&p_org);
     mflw->Branch("theta_xz",&theta_xz);
     mflw->Branch("theta_yz",&theta_yz);
   }

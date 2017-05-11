@@ -15,13 +15,16 @@ Double_t      aoq;
 Double_t      z;
 
 
-void Open();
-void Initialize();
-void OutputTree(Int_t val);
-Int_t GetRandomNumTrack();
-Int_t GetMultiplicityDistribution();
+void   Open();
+void   Initialize();
+void   OutputTree(Int_t val);
+Int_t  GetRandomNumTrack();
+Int_t  GetMultiplicityDistribution();
 Bool_t DefineVersion();
 STParticle* GetMixedTrack(Int_t *ival);
+void   LoadPIDFile();
+Int_t  GetPID(Double_t valx, Double_t valy);
+
 
 Int_t  iVer[3];
 
@@ -37,7 +40,7 @@ Int_t   nEntry;
 
 TFile *fout;
 TTree *mflw = NULL;
-
+TCutG *gProton = NULL;
 
 
 vector<TVector3> vPart;
@@ -75,8 +78,7 @@ vector<Double_t>  theta_yz;
 Double_t         aX;
 Double_t         bY;
 
-TClonesArray     *p_rot = NULL;
-vector<TVector2> pt_rot;
+TClonesArray     *p_org = NULL;
 
 
 // Tree out end

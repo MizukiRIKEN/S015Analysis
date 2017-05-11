@@ -4,21 +4,27 @@
   //  TString fname = "FlwRUN2331m4_prtnphi"; 
   //  TString fname = "Flw2v2900m9_prtnphi";
   //  TString fname = "Flw2v2900m27_prtnphi";
-  TString fname = "Flw2v2900m30_prtnphi";
+  //  TString fname = "Flw2v2900m30_prtnphi";
+
+  TString fname = gSystem->Getenv("FNAME");
+
 
   TFile *fin = new TFile(fname+".root");
 
-  TH2D *hphip_r = (TH2D*)gROOT->FindObject("hphip_r");
-  if(!hphip_r) exit(0);
+  TH2D *h2_r = (TH2D*)gROOT->FindObject("h2_r");
+  if(!h2_r) {
+    h2_r = (TH2D*)gROOT->FindObject("hphip_r");
+    if(!h2_r) exit(0);
+  }
 
-  TH1D *p1 = hphip_r->ProjectionX();
+  TH1D *p1 = h2_r->ProjectionX();
 
 
-  auto cc3 = new TCanvas("cc3", "cc3 Slice",1400, 1200);
-  cc3->Divide(6,5);
+  auto cc3 = new TCanvas("cc3", "cc3 Slice",1200, 1000);
+  cc3->Divide(5,4);
 
   TF1  *f1[30];
-  TH1D *phi_rm[30];
+  TH1D *h2s_rm[30];
 
   Double_t rapid[30];
   Double_t v1[30] = {0.,0.,-2.0e-03,-0.001,-0.00041293,-0.000733738,-0.000612936,-0.000501535,-0.000197325,-0.000480613,
@@ -37,6 +43,7 @@
 
   Int_t m = 0;
   Int_t k = 0;
+
   while( k < 30){
 
     
@@ -48,11 +55,11 @@
     f1[k]->SetParameter(2,0.2);  
 
     fin->cd();
-    phi_rm[k] = (TH1D*)gROOT->FindObject(Form("h1phi_rm%d",k));
-    if(phi_rm[k] != NULL) {
-      phi_rm[k]->Fit(Form("f1%d",k));
+    h2s_rm[k] = (TH1D*)gROOT->FindObject(Form("h2s_rm%d",k));
+    if(h2s_rm[k] != NULL) {
+      h2s_rm[k]->Fit(Form("f1%d",k));
     
-      phi_rm[k]->Draw();
+      h2s_rm[k]->Draw();
 
       if( k > 2 && k < 25) {
 	rapid[m] = p1->GetBinCenter(k+1);
@@ -80,8 +87,8 @@
   gv1->SetLineColor(2);
   gv1->SetMarkerColor(2);
   gv1->SetTitle(";rapidity;v1");  
-  gv1->SetMaximum(0.002);
-  gv1->SetMinimum(-0.002);
+  // gv1->SetMaximum(0.002);
+  // gv1->SetMinimum(-0.002);
   gv1->Draw("APL");
 
 
@@ -90,8 +97,8 @@
   gv2->SetLineColor(4);
   gv2->SetMarkerColor(4);
   gv2->SetTitle(";rapidity;v2");
-  gv2->SetMaximum(0.0005);
-  gv2->SetMinimum(-0.0005);
+  // gv2->SetMaximum(0.0005);
+  // gv2->SetMinimum(-0.0005);
   gv2->Draw("APL");
   
   // auto aLeg = new TLegend(0.1,0.8,0.3,0.9);

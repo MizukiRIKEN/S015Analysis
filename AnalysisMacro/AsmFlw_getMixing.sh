@@ -1,12 +1,13 @@
 #! /bin/bash                                                                                                                                                          
 
-VERSION=2.0.6
+VERSION=2.0.8
 ROT=1
 
-LOG=asmv2r${RUN}_${ROT}.log
-RUN=2900 VER=${VERSION} ROT=${ROT} MIX=0 root -b -q AsmFlw_getMixing.C >& $LOG 
-LOG=asmv2m${RUN}_${ROT}.log
-RUN=2900 VER=${VERSION} ROT=${ROT} MIX=1 root -b -q AsmFlw_getMixing.C >& $LOG &
+
+#LOG=asmr2900_v${VERSION}_${ROT}.log
+#RUN=2900 VER=${VERSION} ROT=${ROT} MIX=0 root -b -q AsmFlw_getMixing.C >& $LOG 
+#LOG=asmr2900_v${VERSION}_${ROT}.log
+#RUN=2900 VER=${VERSION} ROT=${ROT} MIX=1 root -b -q AsmFlw_getMixing.C >& $LOG &
 
 
 RUNNUMBER1=("2901" "2905" "2907" "2913" "2914" "2916" "2917" "2918" "2919")
@@ -14,48 +15,51 @@ RUNNUMBER1=("2901" "2905" "2907" "2913" "2914" "2916" "2917" "2918" "2919")
 
 function v2exe_mix() {
     typeset -i I=0
-    while(( I < ${#RUNNUMBER2[@]} ))
+
+
+    while(( I < ${#RUNNUMBER1[@]} ))
     do
         RUN=${RUNNUMBER1[I]}
-	LOG=asmv2r${RUN}_${ROT}.log
-        echo RUN${RUN} $LOG  ASMV:$ASMV version:$VERSION
-	RUN=${RUN} VER=${VERSION} ROT=${ROT} MIX=0 root -b -q AsmFlw_getMixing.C >& $LOG &
+	LOG=asmm${RUN}_v${VERSION}_${ROT}.log
+        echo RUN${RUN} $LOG  version:$VERSION
+	RUN=${RUN} VER=${VERSION} ROT=${ROT} MIX=1 root -b -q AsmFlw_getMixing.C >& $LOG &
         let I++
 
         RUN=${RUNNUMBER1[I]}
-	LOG=asmv2r${RUN}_${ROT}.log
-        echo RUN${RUN} $LOG  ASMV:$ASMV version:$VERSION
-	RUN=${RUN} VER=${VERSION} ROT=${ROT} MIX=0 root -b -q AsmFlw_getMixing.C >& $LOG &
+	LOG=asmm${RUN}_v${VERSION}_${ROT}.log
+        echo RUN${RUN} $LOG  version:$VERSION
+	RUN=${RUN} VER=${VERSION} ROT=${ROT} MIX=1 root -b -q AsmFlw_getMixing.C >& $LOG &
         let I++
 
         RUN=${RUNNUMBER1[I]}
-	LOG=asmv2r${RUN}_${ROT}.log
-        echo RUN${RUN} $LOG  ASMV:$ASMV version:$VERSION
-	RUN=${RUN} VER=${VERSION} ROT=${ROT} MIX=0 root -b -q AsmFlw_getMixing.C >& $LOG 
+	LOG=asmm${RUN}_v${VERSION}_${ROT}.log
+        echo RUN${RUN} $LOG  version:$VERSION
+	RUN=${RUN} VER=${VERSION} ROT=${ROT} MIX=1 root -b -q AsmFlw_getMixing.C >& $LOG 
         let I++
     done
 
     I=0
-    while(( I < ${#RUNNUMBER2[@]} ))
+    while(( I < ${#RUNNUMBER1[@]} ))
     do
         RUN=${RUNNUMBER1[I]}
-	LOG=asmv2m${RUN}_${ROT}.log
-        echo RUN${RUN} $LOG  ASMV:$ASMV version:$VERSION
-	RUN=${RUN} VER=${VERSION} ROT=${ROT} MIX=1 root -b -q AsmFlw_getMixing.C >& $LOG &
+	LOG=asmr${RUN}_v${VERSION}_${ROT}.log
+        echo RUN${RUN} $LOG  version:$VERSION
+	RUN=${RUN} VER=${VERSION} ROT=${ROT} MIX=0 root -b -q AsmFlw_getMixing.C >& $LOG &
         let I++
 
         RUN=${RUNNUMBER1[I]}
-	LOG=asmv2m${RUN}_${ROT}.log
-        echo RUN${RUN} $LOG  ASMV:$ASMV version:$VERSION
-	RUN=${RUN} VER=${VERSION} ROT=${ROT} MIX=1 root -b -q AsmFlw_getMixing.C >& $LOG &
+	LOG=asmr${RUN}_v${VERSION}_${ROT}.log
+        echo RUN${RUN} $LOG  version:$VERSION
+	RUN=${RUN} VER=${VERSION} ROT=${ROT} MIX=0 root -b -q AsmFlw_getMixing.C >& $LOG &
         let I++
 
         RUN=${RUNNUMBER1[I]}
-	LOG=asmv2m${RUN}_${ROT}.log
-        echo RUN${RUN} $LOG  ASMV:$ASMV version:$VERSION
-	RUN=${RUN} VER=${VERSION} ROT=${ROT} MIX=1 root -b -q AsmFlw_getMixing.C >& $LOG 
+	LOG=asmr${RUN}_v${VERSION}_${ROT}.log
+        echo RUN${RUN} $LOG  version:$VERSION
+	RUN=${RUN} VER=${VERSION} ROT=${ROT} MIX=0 root -b -q AsmFlw_getMixing.C >& $LOG 
         let I++
     done
+
 }
 
 
