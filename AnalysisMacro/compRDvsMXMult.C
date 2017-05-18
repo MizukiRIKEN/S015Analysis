@@ -226,6 +226,13 @@ void dphibt(TString cut="", TString opt="")
 
 }
 
+void rpres()
+{
+  plot2D("TVector2::Phi_0_2pi(unitP_1.Phi()-unitP_2.Phi())","unitP_1.Phi()","mtrack_1>0&&mtrack_2>0");
+  
+}
+
+
 
 void AMDcomp()
 {
@@ -257,7 +264,7 @@ void SetRange(TString param, Int_t *nbin, Double_t *range)
   else if( param == "p_rot.Pt()"){
     *nbin = 200; range[0] = 0.;range[1] = 500;
   }
-  else if(param == "mtrack" || param == "mtrack_t" || param== "mtrack_b") {
+  else if(param == "mtrack") {
     *nbin = 50;  range[0] = 0.;   range[1] = 50;
     cout << " param " << param << endl;
   }
@@ -274,6 +281,10 @@ void SetRange(TString param, Int_t *nbin, Double_t *range)
 
   else if(param == "deltphi"){
     *nbin = 60; range[0] = -3.2; range[1] = 3.2;
+  }
+  else if(param(0,6) == "mtrack" ) {
+    *nbin = 30;  range[0] = 0.;   range[1] = 30;
+    cout << " param " << param << endl;
   }
   else {
     *nbin = 60;

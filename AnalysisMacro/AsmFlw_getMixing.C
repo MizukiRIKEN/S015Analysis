@@ -64,7 +64,6 @@ void AsmFlw_getMixing(Int_t nmax = -1)
   //
   TDatime dtime;
   TDatime btime(dtime);
-  //  TRandom2 pran;
 
   nEntry = fChain->GetEntries();
   std::cout << " Number of Events " << nEntry << std::endl;
@@ -80,7 +79,6 @@ void AsmFlw_getMixing(Int_t nmax = -1)
 
   for(Int_t ievt = 0; ievt < nmax; ievt++){
 
-    Initialize();
 
     if(ievt%1000 == 0) {
       dtime.Set();
@@ -91,6 +89,8 @@ void AsmFlw_getMixing(Int_t nmax = -1)
 	        << (Int_t)ptime/60 << " [min] "
                 << std::endl;
     }
+
+    Initialize(dtime.Get());
    
     Int_t nGoodTrack = 0;
     if(bMix)
@@ -102,6 +102,7 @@ void AsmFlw_getMixing(Int_t nmax = -1)
 
 
     Int_t nLoop = 0;
+
 
     while(kTRUE) {
 
@@ -130,8 +131,6 @@ void AsmFlw_getMixing(Int_t nmax = -1)
 	momPt = aPart1->GetRotatedPt();
       }
 
-      Double_t psudr = -log( tan((mom3.Theta()/2))) ;
-
       if(aPart1 && aPart1->GetBestTrackFlag() && aPart1->GetLinearPID()>1000) {
 	 //       	 && vpt < 500){
        
@@ -139,14 +138,33 @@ void AsmFlw_getMixing(Int_t nmax = -1)
 	if( bMix ) event.push_back(mixEvt);
 	else event.push_back(ievt);
 
+
+	Double_t psudr = -log( tan((mom3.Theta()/2))) ;
+	Double_t rpd   = aPart1->GetRapidity();
+
+
 	Int_t gpid = GetPID(aPart1->GetP(),aPart1->GetTotaldEdx()); // for temporal proton pid
 	if(gpid != 0){
 	  aPart1->SetPID(gpid);
 	  pid.push_back(gpid);
-	}
-	else
-	  pid.push_back(aPart1->GetLinearPID());
+	  rpd = aPart1->GetRapidity();
 
+	  if( rpd < 0.4 ) 
+	    wgt.push_back(-1);
+	  else
+	    wgt.push_back(1);
+	}
+
+	else{
+	  pid.push_back(aPart1->GetLinearPID());
+	  if( psudr < 1.4 )
+	    wgt.push_back(-1);
+	  else
+	    wgt.push_back(1);
+	  
+	}
+
+	trackID.push_back(numGoodTrack);
 	vPart.push_back(mom3);
 	iphi.push_back( mom3.Phi());
 	px.push_back(   mom3.X());
@@ -156,12 +174,12 @@ void AsmFlw_getMixing(Int_t nmax = -1)
 
 	mom.push_back(   aPart1->GetP());
 	dedx.push_back(  aPart1->GetTotaldEdx());
-	rapid.push_back( aPart1->GetRapidity());
 	etot.push_back(  aPart1->GetEtotal());
+	rapid.push_back( rpd );
 	prapid.push_back(psudr);
 
 
-	// before rotation
+	// Original momentum
 	if( BeamAngle ) {
 	  TClonesArray &bp_org = *p_org;
 	  new(bp_org[numGoodTrack-1]) TVector3(aPart1->GetMomentum());
@@ -172,7 +190,6 @@ void AsmFlw_getMixing(Int_t nmax = -1)
 	
 	unitP += mom3.Unit();
     	
-	//	cout << " ntrack " << numGoodTrack << endl;
 	if( mom3.Z() < 400){
 	  unitP_t += momPt.Unit();
 	  mtrack_t++;	    
@@ -182,21 +199,55 @@ void AsmFlw_getMixing(Int_t nmax = -1)
 	  mtrack_b++;
 	}
 
-	if(mom3.Theta()<0.4) {
-	  unitP_lang += mom3.Unit();
-	} 
-      }    
+	//	if(mom3.Theta()<0.4) {
+	  //	  unitP_lang += mom3.Unit();
+	//}
+
+	if(numGoodTrack != wgt.size()) cout << "Error in number of tracks" << endl;
+	unitP_lang += wgt.at(numGoodTrack-1)*momPt.Unit();  // v2.0.9
+	
+      }
       nLoop++;
+      
+
     }
 
 
     // Rapidity distribution //
+
     mtrack = vPart.size();
+
+    //    cout << "m " << mtrack << " / " << mtrack/2 << endl;
+    //subevent analysis
+    Int_t itra = 0;
+    while( itra < mtrack ){
+      Int_t isel = rnd.Integer(2);
+
+      if( mtrack_1 > mtrack/2 && mtrack_2 > mtrack/2 ) break; 
+
+      if( isel == 0 && mtrack_1 < mtrack/2 ) {
+	unitP_1 += wgt.at(itra)*pt.at(itra).Unit();
+	mtrack_1++;
+	//	cout << " _1 " << itra << endl;
+	itra++;
+      }
+      else if( mtrack_2 <= mtrack/2 ) {
+	unitP_2 += wgt.at(itra)*pt.at(itra).Unit();
+	mtrack_2++;
+	//	cout << " _2 " << itra << endl;
+	itra++;
+      }
+      
+    }
+    
+
+
     for(Int_t i = 0; i < mtrack; i++){
 
       TVector2 mExcRP(0.,0.);
       TVector2 mExcRP_b(0.,0.);
       TVector2 mExcRP_t(0.,0.);
+      TVector2 mExcRP_full(0.,0.);
 
       for(Int_t k = 0; k < mtrack; k++){
 
@@ -212,9 +263,15 @@ void AsmFlw_getMixing(Int_t nmax = -1)
 	    mExcRP_b += pt.at(k).Unit(); 
 	    hRPrapd_b->Fill(prapid.at(k));
 	  }
+
+	  mExcRP_full += (Double_t)wgt.at(k) * pt.at(k).Unit();
+
 	}
       }
-
+      
+      rpphi.push_back( TVector2::Phi_mpi_pi( mExcRP_full.Phi() ));
+		       
+		       
       deltphi.push_back(  TVector2::Phi_mpi_pi( pt.at(i).Phi()-mExcRP.Phi()));
       deltphi_t.push_back(TVector2::Phi_mpi_pi( pt.at(i).Phi()-mExcRP_t.Phi()));
       deltphi_b.push_back(TVector2::Phi_mpi_pi( pt.at(i).Phi()-mExcRP_b.Phi()));
@@ -222,7 +279,7 @@ void AsmFlw_getMixing(Int_t nmax = -1)
       Double_t rpx = pt.at(i).Mod() * cos( pt.at(i).Phi() - mExcRP_b.Phi() );
       hRPpxsr_b->Fill(prapid.at(i), rpx);
       rpxb.push_back(rpx);
-
+      
       rpx = pt.at(i).Mod() * cos( pt.at(i).Phi() - mExcRP_t.Phi() );
       hRPpxsr_t->Fill(prapid.at(i), rpx);
       rpxt.push_back(rpx);
@@ -294,20 +351,28 @@ void Open()
 
 }
 
-void Initialize()
+void Initialize(Int_t val)
 {
-  
+  rnd.SetSeed(val);
+  trackID.clear();
+
   unitP   = TVector3(0,0,0);
   unitP_b = TVector2(0,0);
   unitP_t = TVector2(0,0);
-  unitP_lang  = TVector3(0,0,0);
+  unitP_lang  = TVector2(0,0);
+  unitP_1 = TVector2(0.,0.);
+  unitP_2 = TVector2(0.,0.);
+
+  mtrack = 0;
+  mtrack_t = 0;
+  mtrack_b = 0;
+  mtrack_1 = 0;
+  mtrack_2 = 0;
+	
   
   numGoodTrack = 0;
   for(Int_t i = 0; i< 7; i++) ntrack[i];
   
-  mtrack = 0;
-  mtrack_t = 0;
-  mtrack_b = 0;
   event.clear();
   pid.clear();
   vPart.clear();
@@ -321,12 +386,14 @@ void Initialize()
   deltphi.clear();
   deltphi_t.clear();
   deltphi_b.clear();
+  rpphi.clear();
   iphi.clear();
   rapid.clear();
   prapid.clear();
   rpxt.clear();
   rpxb.clear();
   etot.clear();
+  wgt.clear();
 
   if( BeamAngle ){
     p_org->Clear();
@@ -450,6 +517,8 @@ void OutputTree(Int_t nmax)
   mflw->Branch("mtrack",&mtrack,"mtrack/I");
   mflw->Branch("mtrack_t",&mtrack_t,"mtrack_t/I");
   mflw->Branch("mtrack_b",&mtrack_b,"mtrack_b/I");
+  mflw->Branch("mtrack_1",&mtrack_1,"mtrack_1/I");
+  mflw->Branch("mtrack_2",&mtrack_2,"mtrack_1/I");
   mflw->Branch("event",&event);
   mflw->Branch("pid",&pid);
   mflw->Branch("px",&px);
@@ -460,6 +529,8 @@ void OutputTree(Int_t nmax)
   mflw->Branch("deltphi",&deltphi);
   mflw->Branch("deltphi_t",&deltphi_t);
   mflw->Branch("deltphi_b",&deltphi_b);
+  mflw->Branch("rpphi",&rpphi);
+  mflw->Branch("wgt",&wgt);
   mflw->Branch("iphi",&iphi);
   mflw->Branch("rapid",&rapid);
   mflw->Branch("prapid",&prapid);
@@ -469,6 +540,8 @@ void OutputTree(Int_t nmax)
   mflw->Branch("unitP",&unitP);
   mflw->Branch("unitP_b",&unitP_b);
   mflw->Branch("unitP_t",&unitP_t);
+  mflw->Branch("unitP_1",&unitP_1);
+  mflw->Branch("unitP_2",&unitP_2);
   mflw->Branch("unitP_lang",&unitP_lang);
   mflw->Branch("kymult",&kymult,"kymult/I");
 

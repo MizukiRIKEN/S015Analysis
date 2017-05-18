@@ -260,11 +260,11 @@ void protonphi()
   else
     aPID = "&&pid==2212";
 
-  rChain[0] -> Draw("deltphi_b:rapid>>h2_r","mtrack_b>0"+aPID,"colz");
+  rChain[0] -> Draw("TVector2::Phi_mpi_pi(iphi-rpphi):rapid>>h2_r","mtrack>0"+aPID,"colz");
   h2_r->Scale(ddphi);
 
   cc1->cd();
-  rChain[1] -> Draw("deltphi_b:rapid>>h2_m","mtrack_b>0"+aPID,"colz");
+  rChain[1] -> Draw("TVector2::Phi_mpi_pi(iphi-rpphi):rapid>>h2_m","mtrack>0"+aPID,"colz");
   h2_m->Scale(ddphi);
 
   cc2->cd();
@@ -280,6 +280,47 @@ void protonphi()
   Slice2D();  
 
   fitv();
+}
+
+void fragmentphi()
+{
+  gROOT->cd();
+
+  h2_r = new TH2D("h2_r","Real ; rapidity; #Delta#varphi",nbinx,0,5.,60,-3.2,3.2);
+  h2_m = new TH2D("h2_m","Mixed; rapidity; #Delta#varphi",nbinx,0,5.,60,-3.2,3.2);
+
+  dxbin = 5./(Double_t)nbinx;
+
+  Double_t ddphi = 60./6.4*30;
+
+  cc0->cd();
+  TString aPID="";
+  if(fVer >= 207)
+    aPID = "&&pid!=12212";
+  else
+    aPID = "&&pid!=2212";
+
+  //  rChain[0] -> Draw("deltphi_b:prapid>>h2_r","mtrack_b>0"+aPID,"colz");
+  rChain[0] -> Draw("TVector2::Phi_mpi_pi(iphi-rpphi):prapid>>h2_r","mtrack_b>0"+aPID,"colz");
+  h2_r->Scale(ddphi);
+
+  cc1->cd();
+  rChain[1] -> Draw("TVector2::Phi_mpi_pi(iphi-rpphi):prapid>>h2_m","mtrack_b>0"+aPID,"colz");
+  h2_m->Scale(ddphi);
+
+  cc2->cd();
+  TH2D *h2_rm = new TH2D( (*h2_r)/(*h2_m) );
+  h2_rm->SetName("h2_rm");
+  h2_rm->Draw("colz");
+  cc2->SetLogz();
+
+  printName = printHeader+"_prtnphi";
+  
+  cout << " print name " << printName << endl;
+
+  Slice2D();  
+
+  // fitv();
 }
 
 void protonPt()
@@ -369,10 +410,10 @@ void phiphi()
   h2_m = new TH2D("h2_m","Mixed; dPhi_beam; d(Phi_t - Phi_b)",nbinx,0.,6.3,60,0.,6.3);
   
   cc0->cd();
-  rChain[0]->Draw("TVector2::Phi_0_2pi(unitP_t.Phi()-unitP_b.Phi()):unitP_b.Phi()>>h2_r","mtrack_b>0&&mtrack_t>0&&pid==2212","colz");
+  rChain[0]->Draw("TVector2::Phi_0_2pi(unitP_t.Phi()-unitP_b.Phi()):unitP_b.Phi()>>h2_r","mtrack_b>0&&mtrack_t>0&&pid==12212","colz");
 
   cc1->cd();
-  rChain[1]->Draw("TVector2::Phi_0_2pi(unitP_t.Phi()-unitP_b.Phi()):unitP_b.Phi()>>h2_m","mtrack_b>0&&mtrack_t>0&&pid==2212","colz");
+  rChain[1]->Draw("TVector2::Phi_0_2pi(unitP_t.Phi()-unitP_b.Phi()):unitP_b.Phi()>>h2_m","mtrack_b>0&&mtrack_t>0&&pid==12212","colz");
 
   cc2->cd();
   TH2D *h2_rm = new TH2D( (*h2_r)/(*h2_m) );
@@ -410,6 +451,83 @@ void v1()
   TH2D *h2mv1y[2];
   h2mv1y[0] = new TH2D("h2mv1y0","<cos(dphi)> rapidity real ",nbinx,0.,1.,120,-1.,1.);
   h2mv1y[1] = new TH2D("h2mv1y1","<cos(dphi)> rapidity mixed",nbinx,0.,1.,120,-1.,1.);
+
+  auto h2dphiy = new TH2D("h2dphiy","dphi vs rapidity",nbinx,0.,1.,120,-1.,1.);
+
+  for(Int_t irm = 0; irm < 2; irm++){
+    
+    cout << " irm ------------> " << irm << endl;
+
+    Int_t Entry = rChain[irm]->GetEntries();
+
+    //  Entry = 2;
+    for(Int_t i = 0; i < Entry; i++){
+      
+      if(i%10000==0) {
+	dtime.Set();
+	cout << " processed " << i << " dtime --- " << dtime.AsString() << endl; 
+      }
+
+    
+      //      rChain[irm]->Draw("cos(deltphi_b):rapid>>h2dphiy","pid==12212&&mtrack_b>0&&mtrack>1","",1,i); 
+      rChain[irm]->Draw("cos(iphi-rpphi):rapid>>h2dphiy","pid==12212&&mtrack>0&&mtrack>1","",1,i); // since v2.0.10
+      if(h2dphiy->GetEntries() == 0) continue;
+
+      Int_t k = 0;
+      while(k < nbinx){
+	TH1D h2s(*(h2dphiy->ProjectionY("",k,k)) );
+	h2s.SetName("h2s");
+
+	cc0->cd();
+	h2s.Draw("box");
+
+	Int_t    multv1 = h2s.GetEntries();
+	if(multv1 > 0){
+	  Double_t meanv1 = h2s.GetMean();
+	  
+	  //	cout << "event " << i <<  " k : "<< k << " mult " << multv1 << " meanv1 " << meanv1 << endl;
+	  
+	  h1mv1[irm]->Fill(meanv1);
+	  h1m[irm]  ->Fill(multv1);
+	
+	  h2mv1y[irm]->Fill(dxbin*((Double_t)k+0.5),meanv1);
+	
+	}
+	k++;
+	
+      }
+    }
+  }
+
+  h2_r = h2mv1y[0];
+  h2_m = h2mv1y[1];
+  
+  Slice2D();
+
+}
+
+void allv1()
+{
+
+  TDatime dtime;
+  TDatime btime(dtime);
+
+
+  TH1I *h1m[2];
+  h1m[0] = new TH1I("h1m0","mult real ",20,0,20);
+  h1m[1] = new TH1I("h1m1","mult mixed",20,0,20);
+
+  TH1D *h1v1[2];
+  h1v1[0] = new TH1D("h1v10","cos(dphi) real ",120,-1.,1.);
+  h1v1[1] = new TH1D("h1v11","cos(dphi) real ",120,-1.,1.);
+
+  TH1D *h1mv1[2];
+  h1mv1[0] = new TH1D("h1mv10","<cos(dphi)> real ",120,-1.,1.);
+  h1mv1[1] = new TH1D("h1mv11","<cos(dphi)> mixed ",120,-1.,1.);
+
+  TH2D *h2mv1y[2];
+  h2mv1y[0] = new TH2D("h2mv1y0","<cos(dphi)> psudo rapidity real ",nbinx,0.,4.,120,-1.,1.);
+  h2mv1y[1] = new TH2D("h2mv1y1","<cos(dphi)> psudo rapidity mixed",nbinx,0.,4.,120,-1.,1.);
 
   auto h2dphiy = new TH2D("h2dphiy","dphi vs rapidity",nbinx,0.,1.,120,-1.,1.);
 
@@ -636,3 +754,5 @@ void fitv()
 
 
 }
+
+

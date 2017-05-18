@@ -16,7 +16,7 @@ Double_t      z;
 
 
 void   Open();
-void   Initialize();
+void   Initialize(Int_t val);
 void   OutputTree(Int_t val);
 Int_t  GetRandomNumTrack();
 Int_t  GetMultiplicityDistribution();
@@ -37,6 +37,9 @@ Int_t   iAsm;
  
 TChain *fChain;
 Int_t   nEntry;
+
+TRandom3 rnd;
+vector<UInt_t> trackID;
 
 TFile *fout;
 TTree *mflw = NULL;
@@ -62,16 +65,24 @@ vector<Double_t> dedx;
 vector<Double_t> deltphi;
 vector<Double_t> deltphi_t;
 vector<Double_t> deltphi_b;
+vector<Double_t> rpphi;
 vector<Double_t> iphi;
 vector<Double_t> rapid;
 vector<Double_t> etot;
 vector<Double_t> prapid;
 vector<Double_t> rpxt;
 vector<Double_t> rpxb;
+vector<Int_t>    wgt;
 TVector3 unitP;
 TVector2 unitP_b;
 TVector2 unitP_t;
-TVector3 unitP_lang;
+TVector2 unitP_lang;
+TVector2 unitP_1;
+TVector2 unitP_2;
+UInt_t   mtrack_1;
+UInt_t   mtrack_2;
+
+
 vector<Double_t>  theta_xz;
 vector<Double_t>  theta_yz;
 
