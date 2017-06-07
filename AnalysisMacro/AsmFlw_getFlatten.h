@@ -1,12 +1,12 @@
-#ifndef  ASMPLW_GETMIXING
-#define  ASMPLW_GETMIXING
+#ifndef  ASMPLW_GETFLATTEN
+#define  ASMPLW_GETFLATTEN
 
 #include "TVector3.h"
 #include "TVector2.h"
 
 // Reading tree
-TClonesArray *aParticleArray = NULL;
 TClonesArray *mixParticleArray = NULL;
+TClonesArray *flowcorrArray    = NULL;
 Int_t         ntrack[7];
 Int_t         kymult;
 Double_t      ProjA;
@@ -34,7 +34,9 @@ TString sVer;
 TString sAsm;
 Bool_t  BeamAngle;
 Int_t   iAsm;
- 
+TString sbRun;
+UInt_t  nBin; 
+
 TChain *fChain;
 Int_t   nEntry;
 
@@ -49,12 +51,14 @@ TCutG *gProton = NULL;
 vector<TVector3> vPart;
 vector<TVector2> pt;
 
+TClonesArray *aParticleArray = NULL;
+STFlowCorrection *aflowcorrArray = NULL;
+Double_t  *pzmax=0;
+
 // Tree out
 Int_t   iRun;
 Int_t    numGoodTrack;
 Int_t    mtrack;
-Int_t    mtrack_t;
-Int_t    mtrack_b;
 vector<Int_t>    event;
 vector<Int_t>    pid;
 vector<Double_t> px;
@@ -63,8 +67,6 @@ vector<Double_t> pz;
 vector<Double_t> mom;
 vector<Double_t> dedx;
 vector<Double_t> deltphi;
-vector<Double_t> deltphi_t;
-vector<Double_t> deltphi_b;
 vector<Double_t> rpphi;
 vector<Double_t> iphi;
 vector<Double_t> rapid;
@@ -74,8 +76,6 @@ vector<Double_t> rpxt;
 vector<Double_t> rpxb;
 vector<Int_t>    wgt;
 TVector3 unitP;
-TVector2 unitP_b;
-TVector2 unitP_t;
 TVector2 unitP_lang;
 TVector2 unitP_1;
 TVector2 unitP_2;
@@ -101,14 +101,9 @@ TH1I *histGT;
 TH1I *histMixEvt;
 TH1I *histMixTrack;
 TH1D *hRPrapd;
-TH1D *hRPrapd_t;
-TH1D *hRPrapd_b;
 TH1I *hm_t;
 TH1I *hm_b;
 TH1I *hgtc;
-
-TH2D *hRPpxsr_t;
-TH2D *hRPpxsr_b;
 
 
 TFile *mhfile;

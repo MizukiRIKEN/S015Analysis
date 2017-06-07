@@ -123,7 +123,6 @@ void Slice2D()
     h2s_m[k]->SetName(Form("h2s_m%d",k));
     
 
-
     h2s_r[k]->SetDirectory(gROOT);
     h2s_m[k]->SetDirectory(gROOT);
 
@@ -752,6 +751,51 @@ void fitv()
   // aLeg->Draw();
 
 
+
+}
+
+void MakeHist()
+{
+  auto fout = new TFile(printHeader+".root","recreate");
+
+  //  auto cc0 = new TCanvas("cc0","cc0",700,500);
+  cc0->Divide(2,2);
+  cc1->Divide(2,2);
+
+  TH2D *hiphiy_prt[2];
+  TH2D *hiphiy_frg[2]; 
+  TH2D *hdphiy_prt[2];
+  TH2D *hdphiy_frg[2]; 
+  
+  Int_t k = 1;
+  Int_t l = 1;
+  for(Int_t m = 0; m < 2; m++){
+    hiphiy_prt[m] = new TH2D(Form("hiphi_prt%d",m),"iphi proton"  ,100,0.,1.5,400,-3.2,3.2);
+    hiphiy_frg[m] = new TH2D(Form("hiphi_frg%d",m),"iphi fragment",100,0.,3.5,400,-3.2,3.2);
+
+    hdphiy_prt[m] = new TH2D(Form("hdphi_prt%d",m),"iphi proton"  ,100,0.,1.5,400,-3.2,3.2);
+    hdphiy_frg[m] = new TH2D(Form("hdphi_frg%d",m),"iphi fragment",100,0.,3.5,400,-3.2,3.2);
+   
+    cc0->cd(k); k++;
+    TString ss = Form("iphi:rapid>>hiphi_prt%d",m);
+    rChain[m]->Draw(ss,"pid==12212","colz");
+
+    cc0->cd(k); k++;
+    ss = Form("iphi:prapid>>hiphi_frg%d",m);
+    rChain[m]->Draw(ss,"pid>2212","colz");
+
+
+    cc1->cd(l); l++;
+    ss = Form("deltphi:rapid>>hdphi_prt%d",m);
+    rChain[m]->Draw(ss,"pid==12212","colz");
+
+    cc1->cd(l); l++;
+    ss = Form("deltphi:prapid>>hdphi_frg%d",m);
+    rChain[m]->Draw(ss,"pid>2212","colz");
+  }
+
+  fout->Write();
+  fout->Close();
 
 }
 

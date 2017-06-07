@@ -1,10 +1,34 @@
-void FourierCorrection(const Int_t &ival, vector<Double_t> &val)
+#ifndef FOUREIRCORRECTION_H
+#define FOUREIRCORRECTION_H
+
+static Int_t harm;
+Double_t *An;
+Double_t *Bn;
+Double_t *An_rms;
+Double_t *Bn_rms;
+
+void GetCorrection(vector<Double_t> &val)
 {
-  const Int_t harm = ival;
-  Double_t An[harm];
-  Double_t Bn[harm];
-  Double_t An_rms[harm];
-  Double_t Bn_rms[harm];
+
+  for(Int_t i = 0; i < val.size(); i++){
+    Double_t cpphi = val.at(i);
+    for(Int_t k = 0; k < harm; k++){
+      cpphi += An[k]*cos((Double_t)(k+1) * val.at(i));
+      cpphi += Bn[k]*sin((Double_t)(k+1) * val.at(i));
+    } 
+    val.at(i) = cpphi;
+  }  
+}
+
+void FourierCorrection(const Int_t &ival, vector<Double_t> &val, Double_t an[], Double_t bn[], Double_t an_rms[], Double_t bn_rms[])
+{
+  harm = ival;
+
+  An     = new Double_t[harm];
+  Bn     = new Double_t[harm];
+  An_rms = new Double_t[harm];
+  Bn_rms = new Double_t[harm];
+
 
   cout << "val.size " << val.size() << endl;
   vector< vector<Double_t> > fvCos(harm);
@@ -43,26 +67,26 @@ void FourierCorrection(const Int_t &ival, vector<Double_t> &val)
     An_rms[k] =  2./findx * TMath::RMS(ibgn, iend);  
 
    
+    
     cout << setw(5) << noshowpos << k+1 
 	 << scientific << setprecision(5)  << right //<< showpos
 	 << setw(6) << " Bn<cos> : " <<  setw(15) << Bn[k]  << " rms " << Bn_rms[k]
 	 << "    " 
 	 << setw(6) << " An<sin> : " <<  setw(15) << An[k]  << " rms " << An_rms[k]
 	 << endl;
+    
+
+    an[k]     = An[k];
+    an_rms[k] = An_rms[k];
+    bn[k]     = Bn[k];
+    bn_rms[k] = Bn_rms[k];
   }
- 
 
 
-  for(Int_t i = 0; i < val.size(); i++){
+  GetCorrection(val);
 
-    Double_t cpphi = val.at(i);
-    for(Int_t k = 0; k < harm; k++){
-      cpphi += An[k]*cos((Double_t)(k+1) * val.at(i));
-      cpphi += Bn[k]*sin((Double_t)(k+1) * val.at(i));
-    } 
-
-    val.at(i) = cpphi;
-
-
-  }
 }
+
+
+
+#endif

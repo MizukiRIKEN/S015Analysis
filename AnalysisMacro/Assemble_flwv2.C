@@ -1,6 +1,6 @@
 #include "Assemble_flwv2.h"
 //----------------------------------------------------------------------
-// Macro: Assemble_flwv1.C
+// Macro: Assemble_flwv2.C
 //  (c) Mizuki Kurata-Nishimura
 //   2017 Mar. 14 
 //----------------------------------------
@@ -20,7 +20,7 @@ void Setup()
   iRun = atoi(sRun);
 
   BigRIPS  = kTRUE;  //kFALSE;
-  KyotoArry= kTRUE;
+  KyotoArry= kFALSE; //kTRUE;
   KATANA   = kFALSE; //kTRUE;
 }
 
