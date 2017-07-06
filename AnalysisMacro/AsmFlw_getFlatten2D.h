@@ -1,5 +1,5 @@
-#ifndef  ASMPLW_GETFLATTEN
-#define  ASMPLW_GETFLATTEN
+#ifndef  ASMPLW_GETFLATTEN2D
+#define  ASMPLW_GETFLATTEN2D
 
 #include "TVector3.h"
 #include "TVector2.h"
@@ -14,21 +14,36 @@ Double_t      ProjB;
 Double_t      aoq;
 Double_t      z;
 
-
+void      SetEnvironment();
+void      PrintProcess(Int_t ievt);
+void      SetNumberOfProcess(Int_t nmax);
 void      Open();
-void      Initialize(Int_t val);
+void      Initialize();
 void      OutputTree(Long64_t val);
 Long64_t  GetRandomNumTrack();
 Long64_t  GetMultiplicityDistribution();
 Bool_t    DefineVersion();
+
+STParticle* GetRealTrack(Long64_t ival);
 STParticle* GetMixedTrack(Long64_t *ival, Int_t *kval);
+
+void      RotateAsBeamAngle(STParticle *apart, TVector3 *p1, TVector2 *pt);
+void      SetPtWeight(STParticle *apart, Double_t *rpd, Double_t *psudr);
+void      FlatteningCorrection(TVector3 *p1, Int_t ival);
+void      SubEventAnalysis();
+void      AzmAngleRPTReactionPlane();
+
 void      LoadPIDFile();
 Int_t     GetPID(Double_t valx, Double_t valy);
-void      CheckPlot(UInt_t ival=0);
+UInt_t    SetDatabaseFiles();
+Int_t     GetThetaCorretionIndex(Double_t fval, Int_t ival);
+Int_t     GetMultiplicityCorretionIndex(UInt_t ival);
+void      CheckPlot(UInt_t ival = 0);
 
-Int_t  iVer[3];
-
+Int_t   iVer[3];
 TString sRun;
+TString sMix;
+TString sRot;
 Bool_t  bMix;  // kTRUE mixing kFALSE real data
 TString sVer;
 TString sAsm;
@@ -39,6 +54,8 @@ TString sbVer;
 TString sBinp;
 UInt_t  nBin; 
 TString binpara;
+
+Int_t  maxProc;;
 
 //TChain *fChain;
 TTree  *fTree;
@@ -54,9 +71,21 @@ TCutG *gProton = NULL;
 vector<TVector2> pt;
 
 TClonesArray *aParticleArray = NULL;
-STFlowCorrection *aflowcorrArray = NULL;
-Double_t  *binmax=0;
-Double_t  *binmin=0;
+TClonesArray *aflowcorrArray = NULL;
+STFlowCorrection *flowcorr = NULL;
+
+vector<TString> vfname;
+vector< vector<Double_t> >  binmax[2];
+vector< vector<Double_t> >  binmin[2];
+
+vector< pair<Double_t, Double_t> > pbinmin;
+vector< pair<UInt_t  , Double_t> > binmatrix;
+vector< pair<UInt_t  , Double_t> >::iterator itbinmatrix;
+vector <vector< pair<UInt_t, Double_t> >::iterator > ppbinmin;
+
+vector<UInt_t> mtkbin;
+
+UInt_t  binmapsize = 0;
 
 // Tree out
 Int_t   iRun;
@@ -108,7 +137,6 @@ TH1D *hRPrapd;
 TH1I *hm_t;
 TH1I *hm_b;
 TH1I *hgtc;
-
 TH1D *hvphi;
 TH1D *hvthet;
 TH1I *hvmtk;

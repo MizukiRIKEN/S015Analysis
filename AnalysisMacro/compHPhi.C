@@ -109,7 +109,8 @@ void Comp(UInt_t iv1 = 0)
   haiphi0_32->Scale(1./(Double_t)e32);
   haiphi0_29->Scale(1./(Double_t)e29);
 
-  TH1D *nhaiphi0d = new TH1D( (*haiphi0_32)/(*haiphi0_29) );
+  //  TH1D *nhaiphi0d = new TH1D( (*haiphi0_32)/(*haiphi0_29) );
+  TH1D *nhaiphi0d = new TH1D( (*haiphi0_29)/(*haiphi0_32) );
 
   nhaiphi0d->SetMaximum(1.5);
   nhaiphi0d->SetMinimum(0.5);

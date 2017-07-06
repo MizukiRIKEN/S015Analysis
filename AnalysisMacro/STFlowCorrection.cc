@@ -1,5 +1,5 @@
 #include "STFlowCorrection.hh"
-void STFlowCorrection::Initialize(TObjArray *chele, UInt_t ival1, UInt_t ival2)
+void STFlowCorrection::Initialize(TChain *chele, UInt_t ival1, UInt_t ival2)
 {
   ChEle = chele;
   Initialize(ival1, ival2);
@@ -23,25 +23,40 @@ void STFlowCorrection::Init()
   An_rms = new Double_t[harm];
   Bn_rms = new Double_t[harm];
 
+
+
+
+  for(UInt_t i = 0; i < 2; i++){
+    binmax[i] = 0.;;
+    binmin[i] = 0.;;
+    binpara[i]= "";
+  }
+
+
   if(ChEle != NULL)  SetFileName();  
 
-  vphi.clear();
+  clear();
+}
 
+void STFlowCorrection::clear()
+{
+  vphi.clear();
+  bphi.clear();
+  vtheta.clear();
+  vmtrack.clear();
 }
 
 void STFlowCorrection::SetFileName()
 {
-  if( irm == 1 )
-    fname = "cfMix";
-  else 
-    fname = "cfReal";
+  fname = "cf";
 
-  TIter nnext((TCollection*)ChEle);
+  TIter nnext((TCollection*)ChEle->GetListOfFiles());
+
   TString sval = ((TFile)nnext()->GetTitle()).GetName();
-  //  cout << sval << endl;
-    
+
   Ssiz_t ifnd = sval.First("_")-7;
   fname += sval(ifnd,sval.Length()-ifnd-4);
+
 }
 
 void STFlowCorrection::SetFileName(TString sval)
@@ -50,20 +65,15 @@ void STFlowCorrection::SetFileName(TString sval)
   cout << fname << " in defined. " << endl;
 }
 
-UInt_t STFlowCorrection::GetCorrectionFactor(TString comm)
+UInt_t STFlowCorrection::GetCorrectionFactor(UInt_t val)
 {
 
-  cout << "STFlowCorrection::GetCorrectionFactor " << comm << endl;
+  cout << "STFlowCorrection::GetCorrectionFactor : "<< endl;
 
   TString header;
   if(irm  == 1) header = "1->,";
   else          header = "0->,";
 
-  Ssiz_t ifnd = comm.First(":");
-  if(ifnd != 0) {
-    fname += comm(0,ifnd);
-    fname += ".txt";
-  }
 
   fstream fin;
   fin.open(fname, fstream::in);
@@ -77,21 +87,42 @@ UInt_t STFlowCorrection::GetCorrectionFactor(TString comm)
   
   fin >> sget;
   harm = atoi(sget);
-
-  if(charm > harm) charm = harm;
+  charm = harm;
 
   cout << "harm " << harm << " charm " << charm << endl;
   Init();
 
-
   Int_t j = 0;
   while(!fin.eof()){
     fin >> sget;
+    
+    if(sget == "mtrack>"){
+      fin >> sget;
+      binmin[0] = atof(sget);
+      binpara[0]= "mtrack";
+    }
+    else if(sget == "mtrack<"){
+      fin >> sget;
+      binmax[0] = atof(sget);
+      binpara[0]= "mtrack";
+    }
 
     if(sget == "pz<"){
       fin >> sget;
-      pzmax = atof(sget);
+      binmax[0] = atof(sget);
+      binpara[0] = "pz";
     }
+    else if(sget =="theta<"){
+      fin >> sget;
+      binmax[1] = atof(sget);
+      binpara[1] = "theta";
+    }
+    else if(sget =="theta>"){
+      fin >> sget;
+      binmin[1] = atof(sget);
+      binpara[1] = "theta";
+    }
+
     
     else if(sget == header){
       fin >> sget;
@@ -118,6 +149,17 @@ UInt_t STFlowCorrection::GetCorrectionFactor(TString comm)
     }
   }
 
+  if( val == 1 ) ShowParameters();
+
+  return 0;
+}
+
+void STFlowCorrection::ShowParameters()
+{  
+  std::cout << binpara[0] << " > " << binmin[0] << " && < " << binmax[0] << std::endl; 
+  if(binpara[1] != "")
+    std::cout << binpara[1] << " > " << binmin[1] << " && < " << binmax[1] << std::endl; 
+
   for(UInt_t k = 0; k < charm; k++){ 
     cout << "->, " << setw(5) << indx[k] << ", "
    	 << scientific << setprecision(5) << right
@@ -127,9 +169,7 @@ UInt_t STFlowCorrection::GetCorrectionFactor(TString comm)
   }
    
   std::cout << fname << " was loaded." << std::endl;
-  return 1;
 }
-
 
 void STFlowCorrection::GetCorrection(vector<Double_t> &val)
 {
@@ -141,6 +181,10 @@ void STFlowCorrection::GetCorrection(vector<Double_t> &val)
 
 Double_t STFlowCorrection::GetCorrection(Double_t val)
 {
+
+  if( vtheta.size() != bphi.size() )
+    bphi.push_back(val);
+
   Double_t cpphi = val;
 
   for(UInt_t k = 0; k < charm; k++){
@@ -175,16 +219,17 @@ Double_t  *STFlowCorrection::GetAverageCosin(Int_t ival, vector<Double_t> &val)
 
 }
 
-vector<Double_t> STFlowCorrection::FourierCorrection()
+UInt_t STFlowCorrection::FourierCorrection()
 {
-  vector<Double_t> bvec = vphi;
-  FourierCorrection(bvec);
+  bphi = vphi;
+  FourierCorrection(vphi);
   
-  return bvec;
+  return (UInt_t)bphi.size();
 }
 
 void STFlowCorrection::FourierCorrection(vector<Double_t> &val)
 {
+  bphi = val;
 
   std::cout << " harm = " << charm <<  "val.size " << val.size() << endl;
   vector<Double_t> fvCos;
@@ -219,19 +264,21 @@ void STFlowCorrection::FourierCorrection(vector<Double_t> &val)
   }
 
 
-  for(UInt_t k = 0; k < charm; k++){
-    Double_t findx = (Double_t)(k+1);
+  if(val.size()>0){
+    for(UInt_t k = 0; k < charm; k++){
+      Double_t findx = (Double_t)(k+1);
     
-    std::cout << setw(5) << noshowpos << k+1 
-	      << scientific << setprecision(5)  << right //<< showpos
-	      << setw(6) << " Bn<cos> : " <<  setw(15) << Bn[k]  << " rms " << Bn_rms[k]
-	      << "    " 
-	      << setw(6) << " An<sin> : " <<  setw(15) << An[k]  << " rms " << An_rms[k]
-	      << endl;
+      std::cout << setw(5) << noshowpos << k+1 
+		<< scientific << setprecision(5)  << right //<< showpos
+		<< setw(6) << " Bn<cos> : " <<  setw(15) << Bn[k]  << " rms " << Bn_rms[k]
+		<< "    " 
+		<< setw(6) << " An<sin> : " <<  setw(15) << An[k]  << " rms " << An_rms[k]
+		<< endl;
     
+    }
+  
+    GetCorrection(val);
   }
-
-  GetCorrection(val);
 }
 
 UInt_t STFlowCorrection::SaveCorrectionFactor(TString comm)
@@ -250,7 +297,7 @@ UInt_t STFlowCorrection::SaveCorrectionFactor(TString comm)
 
   TChainElement *ele = 0;
   UInt_t ith = 0;
-  TIter nnext((TCollection*)ChEle);
+  TIter nnext((TCollection*)ChEle->GetListOfFiles());
 
   while(( ele = (TChainElement*)nnext() )){
     TFile f(ele->GetTitle());
@@ -275,8 +322,25 @@ UInt_t STFlowCorrection::SaveCorrectionFactor(TString comm)
 }
 
 
+void STFlowCorrection::PrintContents()
+{
+  PrintRange();
 
+  for(UInt_t i = 0; i < (UInt_t)vphi.size(); i++){
+    std::cout << " mtrack " << setw(5) << vmtrack.at(i) << " theta " << setw(8) << vtheta.at(i) 
+   	      << " phi " << vphi.at(i) << std::endl;
+  } 
+}
 
+void STFlowCorrection::PrintRange()
+{
+  std::cout << fname << std::endl;
+
+  if(binpara[0] != "")
+    std::cout << binmin[0] << " < " << binpara[0] << " < " << binmax[0] << std::endl; 
+  if(binpara[1] != "")
+    std::cout << binmin[1] << " < " << binpara[1] << " < " << binmax[1] << std::endl; 
+}
 #if !defined(__CINT__)
 ClassImp(STFlowCorrection);
 #endif

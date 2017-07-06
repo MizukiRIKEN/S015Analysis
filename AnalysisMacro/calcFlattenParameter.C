@@ -7,13 +7,8 @@ TCanvas *cc3 = NULL;
 TCanvas *cc4 = NULL;
 TCanvas *cc5 = NULL;
 TCanvas *cc6 = NULL;
-TCanvas *cc7 = NULL;
-TCanvas *cc8 = NULL;
-TCanvas *cc9 = NULL;
-TCanvas *cc10 = NULL;
 
-TCanvas *cc[7];
-
+TCanvas *cc[6];
 
 const Int_t nbinx = 30;
 UInt_t  fVer = 0;
@@ -41,7 +36,7 @@ TH1D *h1phimid_m;
 TH1D *h1phimid_rm;
 TF1  *f1;
 
-
+Int_t    ntrack[7];
 Int_t    mtrack;
 Int_t    mtrack_1;
 Int_t    mtrack_2;
@@ -56,6 +51,7 @@ vector<Double_t> *px=0;
 vector<Double_t> *py=0;
 vector<Double_t> *deltphi=0;
 TClonesArray     *p_org=0;
+TClonesArray     *p_rot=0;
 
 
 TVector2 *unitP  =NULL;
@@ -79,17 +75,12 @@ UInt_t im = 0;
 UInt_t m_bgn = 0;
 UInt_t m_end = 2;
 
-
-void Slice2D(Int_t nval=30);
-void v1(Int_t nval=30);
-void v2(Int_t nval=30);
-
-void calcRDvsMX(UInt_t ival=0)
+void flatten_iphi_mtrkthetabin();
+void calcFlattenParameter(UInt_t ival = 0)
 {
   gROOT->Reset();
 
   im = ival;
-
 
   UInt_t ichain = 0;
   if( im != 1){
@@ -116,8 +107,6 @@ void calcRDvsMX(UInt_t ival=0)
   }
 
 
-
-
   TString sVer = gSystem -> Getenv("VER");
   TString ssVer = "";
   TString tVer  = sVer+".";
@@ -132,197 +121,10 @@ void calcRDvsMX(UInt_t ival=0)
 
   dxbin = 1./(Double_t)nbinx; 
 
+
+  flatten_iphi_mtrkthetabin();
 }
 
-Double_t *vMean(vector<Double_t> &vec)
-{
-
-  vector<Double_t>::iterator ibgn = vec.begin();
-  vector<Double_t>::iterator iend = vec.end();
-
-  auto *vc = new Double_t[2];
-  vc[0]  =  TMath::Mean(ibgn, iend);
-  vc[1]  =  TMath::RMS(ibgn, iend);
-
-  return vc;
-}
-Double_t *vn(UInt_t hm, vector<Double_t> &vphi)
-{
-
-  vector<Double_t> fvCos;
-
-  Double_t findx = (Double_t)hm;
-  for(UInt_t i = 0; i < (UInt_t)vphi.size(); i++)
-    fvCos.push_back(cos(findx * vphi.at(i)));
-
-  vector<Double_t>::iterator ibgn = fvCos.begin();
-  vector<Double_t>::iterator iend = fvCos.end();
-
-  Double_t *vcos = new Double_t[2];
-  vcos[0]  =  TMath::Mean(ibgn, iend);
-  vcos[1]  =  TMath::RMS(ibgn, iend);
-
-
-  //  cout << hm << " Mean " << vcos[0] << " RMS " << vcos[1] << endl; 
-  return vcos;
-}
-  
-
-
-void plotv1v2(UInt_t nbin=20)
-{
-  
-  Double_t rpdbin[nbin];
-  Double_t rp_min = 0.;
-  Double_t rp_max = 1.;
-  Double_t rp_dbin = (rp_max - rp_min)/(Double_t)nbin;
-
-
-  for(Int_t m = m_bgn; m < m_end; m++){
-
-    rChain[m]->SetBranchAddress("mtrack" ,&mtrack);
-    rChain[m]->SetBranchAddress("iphi"   ,&iphi     ,&biphi);
-    rChain[m]->SetBranchAddress("rpphi"  ,&rpphi    ,&brpphi);
-    rChain[m]->SetBranchAddress("deltphi",&deltphi  ,&bdeltphi);
-    rChain[m]->SetBranchAddress("pid"    ,&pid      ,&bpid);
-    rChain[m]->SetBranchAddress("rapid"  ,&rapid    ,&brapid);
-
-
-    vector< vector<Double_t> > bphi(nbin);
-    vector< vector<Double_t> > rpdbin(nbin);
-
-
-    for(UInt_t k = 0; k < nbin; k++){
-      bphi[k].clear();
-      rpdbin[k].clear();
-    }
-
-
-    Int_t nevt = rChain[m]->GetEntries();
-    cout << " Number of events " << nevt << endl;
-
-
-    for(Int_t i = 0; i < nevt; i++){
-      rChain[m]->GetEntry(i);
-
-      if(mtrack == 0) continue;
-
-      //      cout << "mtrack" << mtrack << " size " << iphi->size() <<  endl;
-      //      cout << " " << iphi->size() << " " << rpphi->size() << " " << rapid->size() << endl;
-      for(UInt_t j = 0; j < (UInt_t)iphi->size(); j++){
-	
-	if(pid->at(j) == 12212){
-
-	  for(UInt_t k = 0; k < nbin; k++){
-	    if(rapid->at(j) < rp_dbin*(Double_t)(k+1)) {
-	      bphi[k].push_back(iphi->at(j)-rpphi->at(j));
-	      rpdbin[k].push_back(rapid->at(j));
-	      break;
-	    }
-	  }
-	}
-      }
-    }
-
-
-
-    Double_t xval[nbin];
-    Double_t xvale[nbin];
-    Double_t yval1[nbin];
-    Double_t yval1e[nbin];
-    Double_t yval2[nbin];
-    Double_t yval2e[nbin];
-
-    for(UInt_t j = 0; j < nbin; j++){
-      Double_t *getx = new Double_t[2];
-      Double_t *gety = new Double_t[2];
-      getx   = vMean(rpdbin[j]);
-      gety   = vn(1, bphi[j]);
-
-      xval[j] = getx[0];
-      yval1[j] = gety[0];
-
-      xvale[j] = getx[1];
-      yval1e[j] = gety[1];
-
-
-      gety    = vn(2, bphi[j]);
-      yval2[j] = gety[0];
-      yval2e[j]= gety[1];
-
-      cout << j << " y " << yval2[1] << " +- " << yval2e[1] << endl;  
-    }
-
-
-    UInt_t ic = 0;
-    UInt_t id = 1;
-    cc[ic] = new TCanvas(Form("cc%d",ic),Form("cc%d",ic),700,500);
-    ic++;
-    //    cc[ic]->Divide(1,2); ic++;
-
-    //cc[ic]->cd(id); id++;
-    auto *gv_v1 = new TGraphErrors(nbin, xval, yval1, xvale, yval1e);
-    gv_v1->SetName("gv_v1");
-
-
-    gv_v1->SetLineColor(4);
-    gv_v1->SetMarkerStyle(20);
-    gv_v1->SetMarkerColor(4);
-   
-    gv_v1->Draw("ALP");
-    
-    
-
-    cc[ic] = new TCanvas(Form("cc%d",ic),Form("cc%d",ic),700,500);
-    cc[ic]->cd(id);
-    auto *gv_v2 = new TGraphErrors(nbin, xval, yval2, xvale, yval2e);
-    gv_v2->SetName("gv_v2");
-
-
-    gv_v2->SetLineColor(2);
-    gv_v2->SetMarkerStyle(20);
-    gv_v2->SetMarkerColor(2);
-
-
-    gv_v2->Draw("ALP");
-
-  }
-
-}
-
-
-void compiphi()
-{
-  cc0 = new TCanvas("cc0","cc0",700,500);
-
-  TH1D *iphi[2];
-
-  for(UInt_t m = 0; m < 2; m++){
-    iphi[m] = new TH1D(Form("iphi%d",m), "iphi",100,-3.2,3.2);
-
-    TString ss = Form("iphi>>iphi%d",m);
-    rChain[m]->Draw(ss,"mtrack>0");
-  }
-
-  cc0->Clear();
-  cc0->Divide(2,2);
-  UInt_t id = 1;
-
-  cc0->cd(id); id++;
-  iphi[0]->Draw();
-
-  cc0->cd(id); id++;
-  iphi[1]->Draw();
-
-  cc0->cd(id); id++;
-  TH1D *iphi01 = new TH1D( (*iphi[0])/ (*iphi[1]) );
-  iphi01->Draw();
-
-}
-
-
-
-//-------------------------------
 
 void flatten_data(Int_t val = 4, Bool_t bout = 0)
 {
@@ -390,7 +192,6 @@ void flatten_data(Int_t val = 4, Bool_t bout = 0)
 
     if(bout) flowcorr->SaveCorrectionFactor("phi_lang: flatten_data()");
 
-
     for(Int_t i = 0; i < phi_lang.size(); i++){
       hphi[m]->Fill(phi_lang.at(i));
       hcphi[m]->Fill(cpphi.at(i));
@@ -402,8 +203,6 @@ void flatten_data(Int_t val = 4, Bool_t bout = 0)
       
     }
   }
-
-
 
   cc0 = new TCanvas("cc0", "cc0",1000, 700);
   cc1 = new TCanvas("cc1", "cc1",1000, 700);
@@ -425,7 +224,6 @@ void flatten_data(Int_t val = 4, Bool_t bout = 0)
   cc1->cd(4);  hccphi[1]->Draw("colz");
 
 }
-
 
 
 void SubeventCorrelation(UInt_t nfl=0)
@@ -469,10 +267,10 @@ void SubeventCorrelation(UInt_t nfl=0)
     hacos[m]  = new TH1D(Form("hacos%d",m), "after  correction; cos(#Delta#Phi) "   ,100,-1.,1.);
 
 
-    rChain[m]->SetBranchAddress("mtrack",&mtrack);
-    rChain[m]->SetBranchAddress("mtrack_1",&mtrack_1);
-    rChain[m]->SetBranchAddress("mtrack_2",&mtrack_2);
-    rChain[m]->SetBranchAddress("unitP",&unitP,&bunitP);
+    rChain[m]->SetBranchAddress("mtrack"    ,&mtrack);
+    rChain[m]->SetBranchAddress("mtrack_1"  ,&mtrack_1);
+    rChain[m]->SetBranchAddress("mtrack_2"  ,&mtrack_2);
+    rChain[m]->SetBranchAddress("unitP"     ,&unitP,&bunitP);
     rChain[m]->SetBranchAddress("unitP_1"   ,&unitP_1,&bunitP_1);
     rChain[m]->SetBranchAddress("unitP_2"   ,&unitP_2,&bunitP_2);
 
@@ -512,7 +310,6 @@ void SubeventCorrelation(UInt_t nfl=0)
       flowcorr->FourierCorrection(phi_2);
     }
 
-
     for(Int_t i = 0; i < phi_1.size(); i++){
       h2bphi[m]->Fill(bphi_1.at(i),TVector2::Phi_mpi_pi(bphi_1.at(i)-bphi_2.at(i)));
       h2aphi[m]->Fill( phi_1.at(i),TVector2::Phi_mpi_pi( phi_1.at(i)- phi_2.at(i)));
@@ -539,9 +336,6 @@ void SubeventCorrelation(UInt_t nfl=0)
     scale = haphi[m]->Integral();
     haphi[m]->Scale(1./scale);
   }
-
-
-
 
   //  TH2D *h2_rm = new TH2D( (*h2_r)/(*h2_m) );
 
@@ -570,7 +364,6 @@ void SubeventCorrelation(UInt_t nfl=0)
   h2aphi[0]->Draw("colz");
   cc0->cd(4);
   haphi[0]->Draw();
-
 
   cc1 = new TCanvas("cc1", "cc1 MIXed",1000, 700);
 
@@ -648,9 +441,8 @@ void SubeventCorrelation(UInt_t nfl=0)
 }
 
 
-void RPResolution()
+void flatten_Subevent()
 {
-  //  Int_t harm = flowcorr->GetNHarmonics();
 
   vector<Double_t> phi_1;
   vector<Double_t> phi_2;
@@ -712,14 +504,14 @@ void RPResolution()
 
     cout << "Fourier correction  " << m << endl; 
 
-    // flowcorr->GetCorrectionFactor();
-    // flowcorr->GetCorrection(phi_1);
+    flowcorr->GetCorrectionFactor();
+    flowcorr->GetCorrection(phi_1);
 
-    // flowcorr->GetCorrectionFactor();
-    // flowcorr->GetCorrection(phi_2);
+    flowcorr->GetCorrectionFactor();
+    flowcorr->GetCorrection(phi_2);
 
-    // flowcorr->FourierCorrection(phi_1);
-    // flowcorr->FourierCorrection(phi_2);
+    flowcorr->FourierCorrection(phi_1);
+    flowcorr->FourierCorrection(phi_2);
 
     
     for(Int_t i = 0; i < phi_1.size(); i++){
@@ -742,8 +534,6 @@ void RPResolution()
     cout << m << "-> after   vcos[0] " << vcos[0] << "  rms " << vcos[1] << endl;    
 
   }
-
-
 
   cc0 = new TCanvas("cc0", "cc0 REAL",1000, 700);
 
@@ -796,13 +586,9 @@ void flatten_iphi(Int_t val = 20, UInt_t iflt = 0)
   vector<Double_t> prapid_i;
   vector<Int_t>    pid_i;
 
-  for(Int_t m = m_bgn; m < m_end; m++){
-
+  for(Int_t m = 0; m < 2; m++){
 
     STFlowCorrection *flowcorr = new STFlowCorrection(rChain[m], harm, m);
-    //STFlowCorrection *flowcorr = new STFlowCorrection(harm, m);
-
-
     
     haiphi[m] = new TH1D(Form("haiphi%d",m), "after iphi"        , 400,-4.,4.);
     harphi[m] = new TH1D(Form("harphi%d",m), "after rpphi"       , 400,-4.,4.);
@@ -855,7 +641,7 @@ void flatten_iphi(Int_t val = 20, UInt_t iflt = 0)
       }
     }
 
-    if(fVer < 210 ) { 
+    if(fVer < 210 || fVer != 222) { 
       if(iflt == 1){
 	flowcorr->FourierCorrection( phi_i );
 	flowcorr->SaveCorrectionFactor(Form("%dniphi:flatten_iphi",harm));
@@ -901,16 +687,6 @@ void flatten_iphi(Int_t val = 20, UInt_t iflt = 0)
   h2_r = (TH2D*)h2_r->RebinY(6,"h2_r");
   h2_m = (TH2D*)haydphi_prt[1]->RebinX(3,"h2_m");
   h2_m = (TH2D*)h2_m->RebinY(10,"h2_m");
-  Slice2D(30);
-
-
-  h2cos_r = new TH2D( (*haycos_prt[0]) );
-  h2cos_m = new TH2D( (*haycos_prt[1]) );
-  v1(30);
-
-  h2cos2_r = new TH2D( (*haycos2_prt[0]) );
-  h2cos2_m = new TH2D( (*haycos2_prt[1]) );
-  v2(30);
 
   
   cc0 = new TCanvas("cc0","cc0",700,800);
@@ -954,328 +730,16 @@ void flatten_iphi(Int_t val = 20, UInt_t iflt = 0)
   
 }
 
-void Slice2D(Int_t nval)
-{
-  
-  cc3 = new TCanvas("cc3", "cc3 Slice",1200, 1000);
-  if(nval == 30) cc3->Divide(6,5);
-  else cc3->Divide(5,4);
 
-  cc4 = new TCanvas("cc4", "cc4 Slice",1200, 1000);
-  if(nval == 30) cc4->Divide(6,5);
-  else cc4->Divide(5,4);
-  
-
-  Int_t nbin = h2_r->GetXaxis()->GetNbins();
-  Int_t binwidth = nbin/nval;
-  cout << "bin width = " << binwidth << endl;
-
-  Int_t iv = 1;
-  for(Int_t k = 0; k < std::min(nval,nbinx); k++){
-
-    Int_t lbin = k*binwidth;
-    h2s_r[k] = new TH1D(*(h2_r->ProjectionY("",lbin,lbin+binwidth)) );
-    h2s_m[k] = new TH1D(*(h2_m->ProjectionY("",lbin,lbin+binwidth)) );
-    
-    h2s_r[k]->SetName(Form("h2s_r%d",k));
-    h2s_m[k]->SetName(Form("h2s_m%d",k));
-    Double_t ycent = h2_r->GetXaxis()->GetBinUpEdge(lbin);
-    h2s_r[k]->SetTitle(Form("Rapidity %f",ycent));    
-    h2s_m[k]->SetTitle(Form("Rapidity %f",ycent));    
-
-    h2s_r[k]->SetDirectory(gROOT);
-    h2s_m[k]->SetDirectory(gROOT);
-
-    h2s_r[k]->SetLineColor(4);
-    h2s_m[k]->SetLineColor(2);
-  
-    cc3->cd(iv); 
-    h2s_r[k]->Draw();
-    cc4->cd(iv); iv++;
-    h2s_m[k]->Draw();
-
-  }
-}
-
-void v1(Int_t nval)
-{
-  
-  // cc5 = new TCanvas("cc5", "cc5 Slice",1200, 1000);
-  // if(nval == 30) cc5->Divide(6,5);
-  // else cc5->Divide(5,4);
-
-  // cc6 = new TCanvas("cc6", "cc6 Slice",1200, 1000);
-  // if(nval == 30) cc6->Divide(6,5);
-  // else cc6->Divide(5,4);
-
-  Int_t nbin = h2cos_r->GetXaxis()->GetNbins();
-  Int_t binwidth = nbin/nval;
-  cout << "bin width = " << binwidth << endl;
-
-  Double_t xval[nval];
-  Double_t yval_r[nval];
-  Double_t yval_m[nval];
-
-
-  Int_t iv = 1;
-  for(Int_t k = 0; k < std::min(nval,nbinx); k++){
-
-    Int_t lbin = k*binwidth;
-    h2coss_r[k] = new TH1D(*(h2cos_r->ProjectionY("",lbin,lbin+binwidth)) );
-    h2coss_m[k] = new TH1D(*(h2cos_m->ProjectionY("",lbin,lbin+binwidth)) );
-    
-    h2coss_r[k]->SetName(Form("h2coss_r%d",k));
-    h2coss_m[k]->SetName(Form("h2coss_m%d",k));
-    Double_t ycent = h2cos_r->GetXaxis()->GetBinUpEdge(lbin);
-    h2coss_r[k]->SetTitle(Form("Rapidity %f",ycent));    
-    h2coss_m[k]->SetTitle(Form("Rapidity %f",ycent));    
-
-    xval[k] = ycent;
-
-    h2coss_r[k]->SetLineColor(4);
-    h2coss_m[k]->SetLineColor(2);
-  
-    // cc5->cd(iv); 
-    // h2coss_r[k]->Draw();
-    // cc6->cd(iv); iv++;
-    // h2coss_m[k]->Draw();
-
-    yval_r[k] = h2coss_r[k]->GetMean();
-    yval_m[k] = h2coss_m[k]->GetMean();
-    
-  }
-
-  cc7 = new TCanvas("cc7","cc7",700,500);
-
-  TGraph *gv_r = new TGraph(nval, xval, yval_r);
-  TGraph *gv_m = new TGraph(nval, xval, yval_m);
-  
-  gv_r->SetName("gv_r");
-  gv_m->SetName("gv_m");
-
-  gv_r->SetLineColor(4);
-  gv_r->SetMarkerStyle(20);
-  gv_r->SetMarkerColor(4);
-
-  gv_m->SetLineColor(2);
-  gv_m->SetMarkerStyle(20);
-  gv_m->SetMarkerColor(2);
-
-
-  auto *mg = new TMultiGraph();
-  mg->SetTitle("Proton v1; Rapidity; v1");
-
-  mg->Add(gv_r);
-  mg->Add(gv_m);
-  mg->Draw("ALP");  
-}
-
-void v2(Int_t nval)
-{
-  
-  cc8 = new TCanvas("cc8", "cc8 Slice",1200, 1000);
-  if(nval == 30) cc8->Divide(6,5);
-  else cc8->Divide(5,4);
-
-  cc9 = new TCanvas("cc9", "cc9 Slice",1200, 1000);
-  if(nval == 30) cc9->Divide(6,5);
-  else cc9->Divide(5,4);
-
-  Int_t nbin = h2cos_r->GetXaxis()->GetNbins();
-  Int_t binwidth = nbin/nval;
-  cout << "bin width = " << binwidth << endl;
-
-  Double_t xval[nval];
-  Double_t yval_r[nval];
-  Double_t yval_m[nval];
-
-
-  Int_t iv = 1;
-  for(Int_t k = 0; k < std::min(nval,nbinx); k++){
-
-    Int_t lbin = k*binwidth;
-    h2cos2s_r[k] = new TH1D(*(h2cos2_r->ProjectionY("",lbin,lbin+binwidth)) );
-    h2cos2s_m[k] = new TH1D(*(h2cos2_m->ProjectionY("",lbin,lbin+binwidth)) );
-    
-    h2cos2s_r[k]->SetName(Form("h2cos2s_r%d",k));
-    h2cos2s_m[k]->SetName(Form("h2cos2s_m%d",k));
-    Double_t ycent = h2cos2_r->GetXaxis()->GetBinUpEdge(lbin);
-    h2cos2s_r[k]->SetTitle(Form("Rapidity %f",ycent));    
-    h2cos2s_m[k]->SetTitle(Form("Rapidity %f",ycent));    
-
-    xval[k] = ycent;
-
-    h2cos2s_r[k]->SetLineColor(4);
-    h2cos2s_m[k]->SetLineColor(2);
-  
-    cc8->cd(iv); 
-    h2cos2s_r[k]->Draw();
-    cc9->cd(iv); iv++;
-    h2cos2s_m[k]->Draw();
-
-    yval_r[k] = h2cos2s_r[k]->GetMean();
-    yval_m[k] = h2cos2s_m[k]->GetMean();
-    
-  }
-
-  cc10 = new TCanvas("cc10","cc10",700,500);
-
-  TGraph *gv2_r = new TGraph(nval, xval, yval_r);
-  TGraph *gv2_m = new TGraph(nval, xval, yval_m);
-  gv2_r->SetName("gv2_r");
-  gv2_m->SetName("gv2_m");
-
-  gv2_r->SetLineColor(4);
-  gv2_r->SetMarkerStyle(20);
-  gv2_r->SetMarkerColor(4);
-
-  gv2_m->SetLineColor(2);
-  gv2_m->SetMarkerStyle(20);
-  gv2_m->SetMarkerColor(2);
-
-  auto *mg = new TMultiGraph();
-  mg->SetTitle("Proton v2; Rapidity; v2");
-  mg->Add(gv2_r);
-  mg->Add(gv2_m);
-
-  mg->Draw("ALP");
-  
-}
-
-
-void iphi_flat()
-{
-  /* 
-     
-   */
-
-  
-  TH2D *hbaiphi[2];
-  TH1D *hbiphi[2];
-  TH1D *haiphi[2];
-  TH2D *hbpziphi[2];
-  TH2D *hapziphi[2];
-
-  for(Int_t m = 0; m < 2; m++){
-    STFlowCorrection *flowcorr = new STFlowCorrection();    
-
-    TString fname;
-    if(m == 1)
-      fname = "cfMixrun2900_mxflw_v2.0.10.20niphi.txt";
-    else
-      fname = "cfRealrun2900_rdflw_v2.0.10.20niphi.txt";
-    flowcorr->SetRealOrMix(m);
-
-
-    // UInt_t sel = 1;
-    // if(sel){
-    //   fname = "cfRealrun3027_rdflw_v2.0.10.20niphi.txt";
-    //   flowcorr->SetRealOrMix(0);
-    // }
-    // else {
-    //   fname = "cfMixrun3027_mxflw_v2.0.10.20niphi.txt";
-    //   flowcorr->SetRealOrMix(1);
-    // }
-
-
-    flowcorr->SetFileName(fname);
-    UInt_t iget =  flowcorr->GetCorrectionFactor();
-
-
-    hbaiphi[m] = new TH2D(Form("hbaiphi%d",m),  " #phi_{i} before and after; before #phi_{i} [rad]; after #phi_{i} [rad] ", 400,-3.5,3.5,400,-3.5,3.5);
-    hbiphi[m]  = new TH1D(Form("hbiphi%d",m),   " #phi_{i} before; Azimuthal angle [rad]"           , 400,-3.5,3.5);
-    haiphi[m]  = new TH1D(Form("haiphi%d",m),   " #phi_{i} after ; Azimuthal angle [rad]"           , 400,-3.5,3.5);
-    hbpziphi[m]= new TH2D(Form("hbpziphi%d",m), " before ; pz; #phi_{i};  "           , 200,0.,1200., 400,-3.5,3.5); 
-    hapziphi[m]= new TH2D(Form("hapziphi%d",m), " after  ; pz; #phi_{i};  "           , 200,0.,1200., 400,-3.5,3.5); 
-
-    rChain[m]->SetBranchAddress("mtrack",&mtrack);
-    rChain[m]->SetBranchAddress("iphi"  ,&iphi  ,&biphi);
-    rChain[m]->SetBranchAddress("pid"   ,&pid   ,&bpid);
-    rChain[m]->SetBranchAddress("pz"    ,&pz    ,&bpz);
-
-    Int_t nevt = rChain[m]->GetEntries();
-    cout << " Number of events " << nevt << endl;
-
-
-
-    Int_t icout = 0;
-    for(Int_t i = 0; i < nevt; i++){
-      rChain[m]->GetEntry(i);
-
-      if(mtrack == 0) continue;
-
-      icout++;
-
-      for(Int_t j = 0; j < (Int_t)iphi->size(); j++){
-
-	Double_t a_iphi = flowcorr->GetCorrection(iphi->at(j));
-
-	hbaiphi[m] -> Fill(iphi->at(j), a_iphi);
-	hbiphi[m]  -> Fill(iphi->at(j));
-	haiphi[m]  -> Fill(a_iphi);
-	hbpziphi[m]-> Fill(pz->at(j), iphi->at(j));
-	hapziphi[m]-> Fill(pz->at(j), a_iphi);
-      }
-    }
-
-    delete flowcorr;
-  }
-
-
-    
-  cc0 = new TCanvas("cc0","cc0",700,800);
-  cc0->Divide(2,3);
-
-  UInt_t iv = 1;
-
-  cc0->cd(iv); iv++;
-  hbiphi[0]->Draw();
-
-  cc0->cd(iv); iv++;
-  hbiphi[1]->Draw();
-
-  cc0->cd(iv); iv++;
-  haiphi[0]->Draw();
-
-  cc0->cd(iv); iv++;
-  haiphi[1]->Draw();
-
-  cc0->cd(iv); iv++;
-  hbaiphi[0]->Draw();
-
-  cc0->cd(iv); iv=1;
-  hbaiphi[1]->Draw();
-  
-  cc0->cd(1);
-
-  cc1 = new TCanvas("cc1","cc1",700,600);
-  cc1->Divide(2,2);
-
-  cc1->cd(iv); iv++;
-  hbpziphi[0]->Draw("colz");
-
-  cc1->cd(iv); iv++;
-  hbpziphi[1]->Draw("colz");
-
-  cc1->cd(iv); iv++;
-  hapziphi[0]->Draw("colz");
-
-  cc1->cd(iv); iv=1;
-  hapziphi[1]->Draw("colz");
-
-  cc1->cd(1);
-
-}
-
-
-void iphi_pzbin()
+void flatten_iphi_pzbin()
 {
   const UInt_t harm = 20;
   
   const UInt_t pznbin = 20;
   Double_t pzbin[pznbin+1];
-  for(UInt_t n = 1; n <= pznbin; n++)
-    pzbin[n] = 3000./(Double_t)pznbin * (Double_t)n;
+  for(UInt_t n = 0; n < pznbin; n++)
+    pzbin[n]    = 3500./(Double_t)pznbin * (Double_t)(n+1);
+  pzbin[pznbin] = 3500.;
 
   
   TH2D *hbaiphi[2];
@@ -1285,7 +749,7 @@ void iphi_pzbin()
   TH2D *hapziphi[2];
 
   for(Int_t m = 0; m < 2; m++){
-  //  for(UInt_t m = 0; m < 1; m++){
+  //for(UInt_t m = 0; m < 1; m++){
 
     hbaiphi[m] = new TH2D(Form("hbaiphi%d",m),  " #phi_{i} before and after; before #phi_{i} [rad]; after #phi_{i} [rad] ", 400,-3.5,3.5,400,-3.5,3.5);
     hbiphi[m]  = new TH1D(Form("hbiphi%d",m),   " #phi_{i} before; Azimuthal angle [rad]"           , 400,-3.5,3.5);
@@ -1309,11 +773,13 @@ void iphi_pzbin()
     vector< vector<Double_t> > bpz(pznbin+1); 
 
     for(UInt_t k = 0; k <= pznbin; k++){
-      bphi.clear();
-      bpz.clear();
+      bphi[k].clear();
+      bpz[k].clear();
     }
 
     Int_t icout = 0;
+
+    //    cout << " at " << pzbin[pznbin-1] << " " << pzbin[pznbin] << endl;
 
     for(UInt_t i = 0; i < nevt; i++){
       rChain[m]->GetEntry(i);
@@ -1323,17 +789,21 @@ void iphi_pzbin()
 
 	hbpziphi[m]->Fill(pz->at(j) , iphi->at(j));
 
-	for(UInt_t n = 0; n <= pznbin; n++){
-	  if( pz->at(j) < pzbin[n] ) {
-	    bphi[n].push_back(iphi->at(j));
-	    bpz[n].push_back(pz->at(j));
-	    break;
+
+	if ( pz->at(j) >= pzbin[pznbin] ){
+	  bphi[pznbin].push_back(iphi->at(j));
+	  bpz[pznbin].push_back(pz->at(j));
+	}
+	else {
+
+	  for(UInt_t n = 0; n < pznbin; n++){
+	    if( pz->at(j) < pzbin[n] ) {
+	      bphi[n].push_back(iphi->at(j));
+	      bpz[n].push_back(pz->at(j));
+	      break;
+	    }
 	  }
-	  else if ( pz->at(j) > pzbin[pznbin] ){
-	    bphi[n].push_back(iphi->at(j));
-	    bpz[n].push_back(pz->at(j));
-	    break;
-	  }
+
 	}
       }
     }
@@ -1343,6 +813,8 @@ void iphi_pzbin()
       
       if(bphi[i].size() > 0) {
 	flowcorr[i]->FourierCorrection(bphi[i]);    
+
+
 	  
 	for(UInt_t j = 0; j < (UInt_t)bphi[i].size(); j++){
 	  hapziphi[m]->Fill(bpz[i].at(j), bphi[i].at(j));
@@ -1360,23 +832,390 @@ void iphi_pzbin()
 
   UInt_t iv = 1;
   cc0->cd(iv); iv++;
-  hbpziphi[0]->Draw("colz");
+  if(hbpziphi[0]) hbpziphi[0]->Draw("colz");
 
   cc0->cd(iv); iv++;
-  hbpziphi[1]->Draw("colz");
+  if(hbpziphi[1]) hbpziphi[1]->Draw("colz");
 
   cc0->cd(iv); iv++;
-  hapziphi[0]->Draw("colz");
+  if(hapziphi[0]) hapziphi[0]->Draw("colz");
 
   cc0->cd(iv); iv++;
-  hapziphi[1]->Draw("colz");
+  if(hapziphi[1]) hapziphi[1]->Draw("colz");
 
   cc0->cd(iv); iv++;
-  haiphi[0]->Draw();
+  if(haiphi[0]) haiphi[0]->Draw();
 
   cc0->cd(iv); iv++;
-  haiphi[1]->Draw();
+  if(haiphi[1]) haiphi[1]->Draw();
 
   cc0->cd(1);
 
 }
+
+void flatten_iphi_thetabin()
+{
+
+  std::cout << "From " << m_bgn << " to " << m_end << std::endl;
+
+
+  const UInt_t harm = 20;
+  
+  const UInt_t thetanbin = 40;
+  Double_t thetabin[thetanbin+1];
+  Double_t theta_min = 0.;
+  Double_t theta_max = 1.4;
+  for(UInt_t n = 0; n < thetanbin+1; n++)
+    thetabin[n]    = theta_max/(Double_t)thetanbin * (Double_t)n;
+
+  TH2D *hbaiphi[2];
+  TH1D *hbiphi[2];
+  TH1D *haiphi[2];
+  TH2D *hbthetaiphi[2];
+  TH2D *hathetaiphi[2];
+
+ 
+
+  for(UInt_t m = m_bgn; m < m_end; m++){
+
+    hbaiphi[m] = new TH2D(Form("hbaiphi%d",m),  " #phi_{i} before and after; before #phi_{i} [rad]; after #phi_{i} [rad] ", 
+			  400,-3.5,3.5,400,-3.5,3.5);
+    hbiphi[m]  = new TH1D(Form("hbiphi%d",m),   " #phi_{i} before; Azimuthal angle [rad]"           , 400,-3.5,3.5);
+    haiphi[m]  = new TH1D(Form("haiphi%d",m),   " #phi_{i} after ; Azimuthal angle [rad]"           , 400,-3.5,3.5);
+    hbthetaiphi[m]= new TH2D(Form("hbthetaiphi%d",m), " before ; theta; #phi_{i};  "           , 200,0.,1.6, 400,-3.5,3.5); 
+    hathetaiphi[m]= new TH2D(Form("hathetaiphi%d",m), " after  ; theta; #phi_{i};  "           , 200,0.,1.6, 400,-3.5,3.5); 
+
+    p_org = new TClonesArray("TVector3", 100);
+    p_rot = new TClonesArray("TVector3", 100);
+
+    rChain[m]->SetBranchAddress("mtrack",&mtrack);
+    rChain[m]->SetBranchAddress("iphi"  ,&iphi  ,&biphi);
+    rChain[m]->SetBranchAddress("pid"   ,&pid   ,&bpid);
+    rChain[m]->SetBranchAddress("p_org" ,&p_org);
+    rChain[m]->SetBranchAddress("p_rot" ,&p_rot);
+
+
+    STFlowCorrection *flowcorr[thetanbin+1];
+    for(UInt_t i = 0; i < thetanbin+1; i++)   flowcorr[i] = new STFlowCorrection(rChain[m], harm, m);    
+
+    Int_t nevt = rChain[m]->GetEntries();
+    cout << " Number of events " << nevt << endl;
+
+    vector< vector<Double_t> > bphi(thetanbin+1); 
+    vector< vector<Double_t> > btheta(thetanbin+1); 
+
+    for(UInt_t k = 0; k <= thetanbin; k++){
+      bphi[k].clear();
+      btheta[k].clear();
+    }
+
+    Int_t icout = 0;
+
+    //    cout << " at " << thetabin[thetanbin-1] << " " << thetabin[thetanbin] << endl;
+
+    for(UInt_t i = 0; i < nevt; i++){
+      rChain[m]->GetEntry(i);
+
+
+      if( p_org->GetEntries() != iphi->size() ){
+	std::cout << "Error: p_org " << p_org->GetEntries() << " iphi " << iphi->size() << std::endl;
+	continue;
+      }
+
+      for(UInt_t j = 0; j < (UInt_t)iphi->size(); j++){ 
+
+	//Double_t theta = ((TVector3*)p_org->At(j))->Theta();
+	Double_t theta = ((TVector3*)p_rot->At(j))->Theta();
+
+	Double_t phi = ((TVector3*)p_rot->At(j))->Phi();
+	
+
+	hbthetaiphi[m]->Fill(theta , phi);
+
+	if ( theta >= thetabin[thetanbin] ){
+	  bphi[thetanbin].push_back(phi);
+	  btheta[thetanbin].push_back(theta);
+	}
+	else {
+
+	  for(UInt_t n = 0; n < thetanbin; n++){
+	    if( theta < thetabin[n+1] ) {
+	      bphi[n].push_back(phi);
+	      btheta[n].push_back(theta);
+	      break;
+	    }
+	  }
+
+	}
+      }
+    }
+      
+    for(UInt_t i = 0; i < thetanbin+1; i++){
+      cout << i << "th "   << bphi[i].size() << " && " << btheta[i].size() <<endl;
+      
+      if(bphi[i].size() > 0) {
+	flowcorr[i]->FourierCorrection(bphi[i]);    
+
+
+	for(UInt_t j = 0; j < (UInt_t)bphi[i].size(); j++){
+	  hathetaiphi[m]->Fill(btheta[i].at(j), bphi[i].at(j));
+	  haiphi[m]->Fill(bphi[i].at(j));	  
+	}
+      }
+
+      if( i == thetanbin)
+	flowcorr[i]-> SaveCorrectionFactor(Form("n%dtheta:flatten_iphi between theta> %f",i,thetabin[i]));    
+      else      
+	flowcorr[i]-> SaveCorrectionFactor(Form("n%dtheta:flatten_iphi between theta> %f && theta< %f",i,thetabin[i],thetabin[i+1]));    
+    }
+  
+    cc[m] = new TCanvas(Form("cc%d",m),Form("cc%d",m),350,1000);
+
+    cc[m]->Divide(1,3);
+
+    UInt_t iv = 1;
+    cc[m]->cd(iv); iv++;
+    if(hbthetaiphi[m]) hbthetaiphi[m]->Draw("colz");
+
+    cc[m]->cd(iv); iv++;
+    if(hathetaiphi[m]) hathetaiphi[m]->Draw("colz");
+
+    cc[m]->cd(iv); iv++;
+    if(haiphi[m]) haiphi[m]->Draw();
+
+    cc[m]->cd(1);
+  }
+}
+
+void flatten_iphi_mtrkthetabin()
+{
+  std::cout << "flatten_iphi_thetamtkbin " << std::endl;
+
+  std::cout << "From " << m_bgn << " to " << m_end << std::endl;
+
+  const UInt_t harm = 20;
+  
+  const UInt_t thetanbin = 40;
+  Double_t thetabin[thetanbin+1];
+  Double_t theta_min = 0.;
+  Double_t theta_max = 1.4;
+  for(UInt_t n = 0; n < thetanbin+2; n++)
+    thetabin[n]    = theta_max/(Double_t)thetanbin * (Double_t)n;
+
+  const UInt_t mtrknbin=6;
+  Double_t mtrkbin[mtrknbin+1];
+  Double_t mtrk_min = 0;
+  Double_t mtrk_max = 60;
+  for(UInt_t n = 0; n < mtrknbin+2; n++)
+    mtrkbin[n]   = mtrk_max/mtrknbin * n;
+
+  TH2D *hbaiphi[2];
+  TH1D *hbiphi[2];
+  TH1D *haiphi[2];
+  TH2D *hbthetaiphi[2];
+  TH2D *hathetaiphi[2];
+  TH2D *hbmtrkiphi[2];
+  TH2D *hamtrkiphi[2];
+ 
+
+  UInt_t im = 0;
+
+  for(UInt_t m = m_bgn; m < m_end; m++){
+
+    hbaiphi[m] = new TH2D(Form("hbaiphi%d",m),  " #phi_{i} before and after; before #phi_{i} [rad]; after #phi_{i} [rad] ", 
+			  400,-3.5,3.5,400,-3.5,3.5);
+    hbiphi[m]  = new TH1D(Form("hbiphi%d",m),   " #phi_{i} before; Azimuthal angle [rad]"  , 400,-3.2,3.2);
+    haiphi[m]  = new TH1D(Form("haiphi%d",m),   " #phi_{i} after ; Azimuthal angle [rad]"  , 400,-3.2,3.2);
+    hbthetaiphi[m]= new TH2D(Form("hbthetaiphi%d",m), " before ; theta; #phi;  "           , 200,0.,1.6, 400,-3.2,3.2); 
+    hathetaiphi[m]= new TH2D(Form("hathetaiphi%d",m), " after  ; theta; #phi;  "           , 200,0.,1.6, 400,-3.2,3.2); 
+
+    hbmtrkiphi[m] = new TH2D(Form("hbmtrkiphi%d",m)," before ; Number of tracks; #phi"     , 70,0,70,400,-3.2,3.2);
+    hamtrkiphi[m] = new TH2D(Form("hamtrkiphi%d",m)," after  ; Number of tracks; #phi"     , 70,0,70,400,-3.2,3.2);
+
+
+    p_org = new TClonesArray("TVector3", 100);
+    p_rot = new TClonesArray("TVector3", 100);
+
+    rChain[m]->SetBranchAddress("mtrack",&mtrack);
+    rChain[m]->SetBranchAddress("ntrack",ntrack);
+    rChain[m]->SetBranchAddress("iphi"  ,&iphi  ,&biphi);
+    rChain[m]->SetBranchAddress("pid"   ,&pid   ,&bpid);
+    rChain[m]->SetBranchAddress("p_org" ,&p_org);
+    rChain[m]->SetBranchAddress("p_rot" ,&p_rot);
+
+    STFlowCorrection *flowcorr[mtrknbin+1][thetanbin+1];
+    for(UInt_t j = 0; j < mtrknbin+1; j++){   
+      for(UInt_t i = 0; i < thetanbin+1; i++)  { 
+	flowcorr[j][i] = new STFlowCorrection(rChain[m], harm, m); 
+
+	flowcorr[j][i]->SetBin_min(0, mtrkbin[j]);
+	flowcorr[j][i]->SetBin_min(1, thetabin[i]);
+	
+	if(j < mtrknbin+1 && i < thetanbin+1){
+	  flowcorr[j][i]->SetBin_max(0, mtrkbin[j+1]);
+	  flowcorr[j][i]->SetBin_max(1, thetabin[i+1]);
+	}
+      }   
+    }
+    
+
+    Int_t nevt = rChain[m]->GetEntries();
+    cout << " Number of events " << nevt << endl;
+
+
+    Int_t icout = 0;
+
+    //    cout << " at " << thetabin[thetanbin-1] << " " << thetabin[thetanbin] << endl;
+
+    for(UInt_t i = 0; i < nevt; i++){
+      rChain[m]->GetEntry(i);
+
+
+      UInt_t imtrk  = 0;
+
+      UInt_t j = mtrknbin;
+      while(1){ 
+	if( ntrack[3] >= mtrkbin[j] ){
+	  imtrk = j;
+	  break;
+	}
+	j--;
+      }
+
+      if( p_org->GetEntries() != iphi->size() ){
+	std::cout << "Error: p_org " << p_org->GetEntries() << " iphi " << iphi->size() << std::endl;
+	continue;
+      }
+
+
+      UInt_t itheta;
+
+      for(UInt_t j = 0; j < (UInt_t)iphi->size(); j++){ 
+	// Double_t phi   = ((TVector3*)p_org->At(j))->Phi();
+	// Double_t theta = ((TVector3*)p_org->At(j))->Theta();
+	Double_t phi   = ((TVector3*)p_rot->At(j))->Phi();
+	Double_t theta = ((TVector3*)p_rot->At(j))->Theta();
+
+	UInt_t k = thetanbin;
+	while(1){ 
+	  if( theta >= thetabin[k] ){
+	    itheta = k;
+	    break;
+	  }
+	  k--;
+	}
+
+	hbthetaiphi[m]->Fill(theta , phi);	  
+	hbmtrkiphi[m]-> Fill(mtrack  , phi);	  
+
+	if(imtrk <= mtrknbin && itheta <= thetanbin)
+	  flowcorr[imtrk][itheta]->Add(mtrack,phi,theta);
+      }
+    }
+
+    //----------  get corrrection parameters
+
+    for(UInt_t j = 0; j < mtrknbin+1; j++){   
+
+      for(UInt_t i = 0; i < thetanbin+1; i++) {   
+	UInt_t nphi = flowcorr[j][i]->FourierCorrection();
+	std::cout << " At " << mtrkbin[j] << " : " << thetabin[i] << std::endl;
+
+	if(nphi == 0) {
+	  std::cout << " no data is stored " << std::endl;
+	  continue;
+	}
+
+	vector<Int_t>    mtk   = flowcorr[j][i]->GetMTrack();
+	vector<Double_t> aphi  = flowcorr[j][i]->GetCorrectedPhi();
+	vector<Double_t> atheta= flowcorr[j][i]->GetTheta();
+
+	// std::cout << " size of pair  " << aphi.size() << " : " << atheta.size() << " / " << nphi << std::endl;
+	// std::cout << " mtrack mean " << flowcorr[j][i]->GetMTrackMean() << " theta mean " << flowcorr[j][i]->GetThetaMean() << endl;
+
+	if( aphi.size() != atheta.size() ){
+	  std::cout << " size of pair doesn't match " << aphi.size() << " : " << atheta.size() << std::endl;
+	  continue;
+	}
+
+	
+	for(UInt_t k = 0; k < (UInt_t)mtk.size(); k++){	  
+	  hathetaiphi[m]->Fill(atheta.at(k), aphi.at(k));
+	  hamtrkiphi[m]-> Fill(mtk.at(k)   , aphi.at(k));
+	  haiphi[m]->Fill(aphi.at(k));	  
+	}
+	
+	TString comm = Form("m%dn%dmtktheta:flatten_iphi_mtrkthetabin; mtrack> %f && mtrack< %f theta> %f && theta< %f",
+			    j,i,mtrkbin[j],mtrkbin[j+1],thetabin[i],thetabin[i+1]);
+	flowcorr[j][i]-> SaveCorrectionFactor(comm);    
+      }
+    }
+  
+
+    cc[im] = new TCanvas(Form("cc%d",im),Form("cc%d",im),700,1000);
+    cc[im]->Divide(2,3);
+    
+    UInt_t iv = 1;
+    cc[im]->cd(iv); iv++;
+    if(hbthetaiphi[im]) hbthetaiphi[m]->Draw("colz");
+    
+    cc[im]->cd(iv); iv++;
+    if(hbmtrkiphi[m])  hbmtrkiphi[m]->Draw("colz");
+
+    cc[im]->cd(iv); iv++;
+    if(hathetaiphi[m]) hathetaiphi[m]->Draw("colz");
+
+    cc[im]->cd(iv); iv++;
+    if(hamtrkiphi[m])  hamtrkiphi[m]->Draw("colz");
+    
+    cc[im]->cd(iv); iv++;
+    if(haiphi[m]) haiphi[m]->Draw();
+    
+    cc[im]->cd(1);
+
+    
+    im++;
+
+
+
+    if(m == 0){
+      cc[im] = new TCanvas(Form("cc%d",im),Form("cc%d",im),700,500);
+      cc[im]->Divide(2,2);
+    
+      iv = 1;
+      cc[im]->cd(iv); iv++;
+    
+      auto hvphi  = new TH1D("hvphi"  ,"phi"   ,100,-3.2,3.2);
+      auto hvthet = new TH1D("hvtheta","theta" ,100,0.,1.4);
+      auto hvmtk  = new TH1I("hvmtk"  ,"mtrack", 60,0,60);
+    
+      vector<Double_t>::iterator itr;
+      vector<Int_t>::iterator   iitr;
+
+      vector<Double_t> vec1 =  flowcorr[3][3]->GetOriginalPhi();
+      for(itr=vec1.begin(); itr!=vec1.end(); itr++)      
+     	hvphi->Fill(*itr);
+      vec1.clear();
+
+      hvphi->Draw();
+
+
+      cc[im]->cd(iv); iv++;
+      vec1 =  flowcorr[3][3]->GetTheta();
+      for(itr=vec1.begin(); itr!=vec1.end(); itr++)      
+     	hvthet->Fill(*itr);
+    
+      hvthet->Draw();
+    
+      cc[im]->cd(iv); iv++;
+      vector<Int_t> vec2 =  flowcorr[3][3]->GetMTrack();
+      for(iitr = vec2.begin(); iitr != vec2.end(); iitr++)
+     	hvmtk->Fill(*iitr);
+
+      hvmtk->Draw();
+
+    }
+  }
+
+}
+

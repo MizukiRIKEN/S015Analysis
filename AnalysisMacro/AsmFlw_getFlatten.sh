@@ -1,89 +1,105 @@
 #! /bin/bash                                                                                                                                                          
 
-#VERSION=2.0.10
-BRUN=3032
-VERSION=2.1.6
+#BRUN=3032
+#BVER=11
+#VERSION=2.1.9
+#RUNNUMBER1=("3032" "3034" "3036") 
 
 
-#LOG=asmr2900_v${VERSION}_${ROT}.log
-#RUN=2900 VER=2.1.4 BRUN=10 MIX=0 root AsmFlw_getFlatten.C  
-#LOG=asmr2900_v${VERSION}_${ROT}.log
-#RUN=2900 VER=${VERSION} BRUN=${BRUN} MIX=1 root -b -q AsmFlw_getFlatten.C >& $LOG &
+#BRUN=2921
+#BVER=14
+#SBPR="theta"
 
-RUNNUMBER1=("3032" "3034" "3036") 
-#RUNNUMBER1=("2900")
+#VERSION=2.1.13
+#BRUN=0
+#BVER=0
+#SBPR=0
+
+VERSION=2.1.15
+BRUN=2900
+BVER=2.1.13
+SBPR=theta
+
+
 #RUNNUMBER1=("2900" "2901" "2905" "2907" "2913" "2914" "2916" "2917" "2918" "2919" "2920" "2921")
-#RUNNUMBER1=( "2920" "2921" "2922" "2924" "2925" "2926" "2927" "2928" "2929" "2930" "2931" "2932" "2933" "2934" "2935" "2936" "2937" "2938" "2939" "2940" "2941")
-###
-#RUN={2900,2901,2905,2907,2913,2914,2916,2917,2918,2919,2920,2921}
-###
+RUNNUMBER1=("2901" "2905" "2907" "2913" "2914" "2916" "2917" "2918" "2919" "2920" "2921")
+#RUNNUMBER1=("2900")
+
+MIXONLY=1
+## 0 REAL and MIXed
+## 1 REAL only
+## 2 MIXed only
 
 
 function v2exe_flatten() {
     typeset -i I=0
+    
+    if [ ${MIXONLY} -ne "2" ]; then
+	MIX=0
+	echo " REAL data --- "
 
+	while(( I < ${#RUNNUMBER1[@]} ))
+	do
+            RUN=${RUNNUMBER1[I]}
+	    LOG=asm${RUN}_v${VERSION}_${MIX}.log
+	    echo RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} BVER=${BVER} SBPR=${SBPR} root AsmFlw_getFlatten.C  '>&' $LOG 
+	    RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} BVER=${BVER} SBPR=${SBPR} root -b -q AsmFlw_getFlatten.C >& $LOG &
+            let I++
+	    if [ $I -ge ${#RUNNUMBER1[@]} ]; then
+		break;
+	    fi
+	    
+            RUN=${RUNNUMBER1[I]}
+	    LOG=asm${RUN}_v${VERSION}_${MIX}.log
+	    echo RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} BVER=${BVER} SBPR=${SBPR} root AsmFlw_getFlatten.C  '>&' $LOG 
+	    RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} BVER=${BVER} SBPR=${SBPR} root -b -q AsmFlw_getFlatten.C >& $LOG &
+            let I++
+	    if [ $I -ge ${#RUNNUMBER1[@]} ]; then
+		break;
+	    fi
+	    
+            RUN=${RUNNUMBER1[I]}
+	    LOG=asm${RUN}_v${VERSION}_${MIX}.log
+	    echo RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} BVER=${BVER} SBPR=${SBPR} root AsmFlw_getFlatten.C  '>&' $LOG 
+	    RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} BVER=${BVER} SBPR=${SBPR} root -b -q AsmFlw_getFlatten.C >& $LOG 
+            let I++
+	done
+    fi
 
-    MIX=0
-    while(( I < ${#RUNNUMBER1[@]} ))
-    do
-        RUN=${RUNNUMBER1[I]}
-	LOG=asm${RUN}_v${VERSION}_${MIX}.log
-	echo RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} root AsmFlw_getFlatten.C  $LOG 
-	RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} root -b -q AsmFlw_getFlatten.C >& $LOG &
-        let I++
-	if [ $I -ge ${#RUNNUMBER1[@]} ]; then
-	    break;
-	fi
+    if [ ${MIXONLY} -ne "1" ]; then
+	echo " MIXed data --- "
+	MIX=1
+	I=0
+	while(( I < ${#RUNNUMBER1[@]} ))
+	do
+	    RUN=${RUNNUMBER1[I]}
+	    LOG=asm${RUN}_v${VERSION}_${MIX}.log
+	    echo RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} BVER=${BVER} SBPR=${SBPR} root AsmFlw_getFlatten.C  '>&' $LOG 
+	    RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} BVER=${BVER} SBPR=${SBPR} root -b -q AsmFlw_getFlatten.C >& $LOG &
+	    let I++
+	    if [ $I -ge ${#RUNNUMBER1[@]} ]; then
+		break;
+	    fi
 
-        RUN=${RUNNUMBER1[I]}
-	LOG=asm${RUN}_v${VERSION}_${MIX}.log
-        echo RUN${RUN} $LOG  version:$VERSION
-	echo RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} root AsmFlw_getFlatten.C  $LOG 
-	RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} root -b -q AsmFlw_getFlatten.C >& $LOG &
-        let I++
-	if [ $I -ge ${#RUNNUMBER1[@]} ]; then
-	    break;
-	fi
-
-        RUN=${RUNNUMBER1[I]}
-	LOG=asm${RUN}_v${VERSION}_${MIX}.log
-	echo RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} root AsmFlw_getFlatten.C  $LOG 
-	RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} root -b -q AsmFlw_getFlatten.C >& $LOG 
-        let I++
-    done
-
-    MIX=1
-    I=0
-    while(( I < ${#RUNNUMBER1[@]} ))
-    do
-        RUN=${RUNNUMBER1[I]}
-	LOG=asm${RUN}_v${VERSION}_${MIX}.log
-	echo RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} root AsmFlw_getFlatten.C  $LOG 
-	RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} root -b -q AsmFlw_getFlatten.C >& $LOG &
-        let I++
-	if [ $I -ge ${#RUNNUMBER1[@]} ]; then
-	    break;
-	fi
-
-        RUN=${RUNNUMBER1[I]}
-	LOG=asm${RUN}_v${VERSION}_${MIX}.log
-	echo RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} root AsmFlw_getFlatten.C  $LOG 
-	RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} root -b -q AsmFlw_getFlatten.C >& $LOG &
-        let I++
-	if [ $I -ge ${#RUNNUMBER1[@]} ]; then
-	    break;
-	fi
-
-        RUN=${RUNNUMBER1[I]}
-	LOG=asm${RUN}_v${VERSION}_${MIX}.log
-	echo RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} root AsmFlw_getFlatten.C  $LOG 
-	RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} root -b -q AsmFlw_getFlatten.C >& $LOG 
-        let I++
-    done
+	    RUN=${RUNNUMBER1[I]}
+	    LOG=asm${RUN}_v${VERSION}_${MIX}.log
+	    echo RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} BVER=${BVER} SBPR=${SBPR} root AsmFlw_getFlatten.C  '>&' $LOG 
+	    RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} BVER=${BVER} SBPR=${SBPR} root -b -q AsmFlw_getFlatten.C >& $LOG &
+	    let I++
+	    if [ $I -ge ${#RUNNUMBER1[@]} ]; then
+		break;
+	    fi
+	    
+	    RUN=${RUNNUMBER1[I]}
+	    LOG=asm${RUN}_v${VERSION}_${MIX}.log
+	    echo RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} BVER=${BVER} SBPR=${SBPR} root AsmFlw_getFlatten.C  '>&' $LOG 
+	    RUN=${RUN} VER=${VERSION} BRUN=${BRUN} MIX=${MIX} BVER=${BVER} SBPR=${SBPR} root -b -q AsmFlw_getFlatten.C >& $LOG 
+	    let I++
+	done
+    fi
 
 }
 
 
 v2exe_flatten
 
-#  LocalWords:  asmr
