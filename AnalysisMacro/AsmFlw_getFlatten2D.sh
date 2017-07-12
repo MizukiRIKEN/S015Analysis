@@ -1,7 +1,7 @@
 #! /bin/bash                                                                                                       
 
-VERSION=2.2.3
-BRUN=2907
+VERSION=2.2.4
+BRUN=0
 BVER=2.2.2
 SBPR=mtktheta
 
@@ -9,8 +9,8 @@ SBPR=mtktheta
 
 RUNNUMBER1=("2900")
 RUNNUMBER1=("2900" "2901" "2905" "2907" "2913" "2914" "2916" "2917" "2918" "2919" "2920" "2921")
-RUNNUMBER1=("2900" "2901" "2905" "2907" "2913" "2914" "2916" "2917" "2918" "2919" "2921")
-MIXONLY=1
+RUNNUMBER1=("2900" "2901" "2905" "2907" "2913" "2914" "2916" "2917" "2918")
+MIXONLY=2
 ## 0 REAL and MIXed
 ## 1 REAL only
 ## 2 MIXed only

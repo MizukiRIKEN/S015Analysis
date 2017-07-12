@@ -1,21 +1,12 @@
-#include "AsmFlw_getFlatten2D.h"
+#include "AsmFlw_getFlatten2Dcrr.h"
 //----------------------------------------------------------------------
 //   AsmFlw_getFlatten.C  succeeded from AsmFlw_getMixing.C
 // (c) Mizuki Kurata-Nishimura 
 //----------------------------------------
-// version 0.0
-// An input file comes from Assemble_flwv1.C (ASMV=1)
-// version 1.0
-// An input file comes from Assemble_flwv2.C (ASMV=2) since 11 April 2017
-//
-// RUN=#### VER=#.#.# MIX=0 NBIN=# root AsmFlw_getFlatten.C or AsmFlw_getFlatten.C\(100\)
-//         Real create a multiplicity distribution  
-// version 2.0
-// parameter ASMV is involved in VER#.#.#
-// 
+
 //
 //----------------------------------------------------------------------
-void AsmFlw_getFlatten2D(Long64_t nmax = -1)
+void AsmFlw_getFlatten2Dcrr(Long64_t nmax = -1)
 {
   SetEnvironment();
 
@@ -43,6 +34,7 @@ void AsmFlw_getFlatten2D(Long64_t nmax = -1)
 
   SetNumberOfProcess(nmax);
 
+
   for(Long64_t ievt = 0; ievt < maxProc; ievt++){
 
     PrintProcess(ievt);
@@ -58,14 +50,8 @@ void AsmFlw_getFlatten2D(Long64_t nmax = -1)
       nGoodTrack = aParticleArray->GetEntries();
     }
 
-
-
-    Int_t mtkBIN = -1;
     if(ntrack[3] > 0 || bMix) {
      
-      if(sbRun != "0")
-	mtkBIN = GetMultiplicityCorretionIndex(ntrack[3]);
-
       Long64_t nLoop = 0;
 
       while(kTRUE) {
@@ -74,97 +60,62 @@ void AsmFlw_getFlatten2D(Long64_t nmax = -1)
 	if( !bMix && nLoop >=  nGoodTrack) break;
 
 
-	STParticle *aPart1;
-	Long64_t mixEvt = (Long64_t)ievt;
+	STParticle *aPart1 = NULL;
+	Long64_t    mixEvt = (Long64_t)ievt;
 	
-	//	if(bMix)cout << "mixEvt " << mixEvt << " -> " <<  ievt << " / " << nGoodTrack << endl;
-
 	Int_t ntrk = nGoodTrack;
 
 	if( bMix ) 
 	  aPart1 = GetMixedTrack(&mixEvt, &ntrk); // Get a track randomly
 	else 
 	  aPart1 = GetRealTrack(nLoop);
-	
 
-	TVector3 mom3  = aPart1->GetMomentum();
-	TVector2 momPt = TVector2(aPart1->GetRotatedMomentum().X(), aPart1->GetRotatedMomentum().Y());
-
-	// Rotate along beam angle
-	if( BeamAngle )
-	  RotateAsBeamAngle(aPart1, &mom3, &momPt);
-
-
+	aPart1->SetReactionPlaneFlag(0);
 
 	// Good track and fragments are selected
-	if(aPart1 && aPart1->GetBestTrackFlag() && aPart1->GetLinearPID()>1000) {
+	if(aPart1!=NULL && aPart1->GetBestTrackFlag() && aPart1->GetLinearPID()>1000) {
        
 	  numGoodTrack++;
 
-	  if( bMix ) 
+
+	  aPart1->SetReactionPlaneFlag(1);
+
+	  TVector3 mom3  = aPart1->GetMomentum();
+	  TVector2 momPt = TVector2( aPart1->GetMomentum().X(), aPart1->GetMomentum().Y() );
+
+	  // Rotate along beam angle
+	  if( BeamAngle )
+	    RotateAsBeamAngle(aPart1, &mom3, &momPt);
+
+	  if( bMix ) {
+	    aPart1->SetMixedEventID(mixEvt);
 	    event.push_back(mixEvt);
+	  }
 	  else 
 	    event.push_back(ievt);
 
-	  Double_t psudr = -log( tan((mom3.Theta()/2)) ) ;
-	  Double_t rpd   = aPart1->GetRapidity();
-
-	  SetPtWeight(aPart1, &rpd, &psudr);
+	  
+	  SetPtWeight(aPart1);
+	  aPart1->SetMixedNtrack(ntrk);
 
 	  trackID.push_back(numGoodTrack);
-	  mxntrk.push_back(ntrk);
+	  
 
-	  if(nBin > 0 )
-	    FlatteningCorrection(&mom3, mtkBIN);
-
-	  momPt = TVector2(mom3.X(), mom3.Y());
-	  itheta.push_back( mom3.Phi());
-	  iphi.push_back(   mom3.Phi());
-	  px.push_back(     mom3.X());
-	  py.push_back(     mom3.Y());
-	  pz.push_back(     mom3.Z());
-	  pt.push_back(     momPt);
-	  dedx.push_back(   aPart1->GetTotaldEdx());
-	  etot.push_back(   aPart1->GetEtotal());
-	  rapid.push_back(  rpd );
-	  prapid.push_back( psudr);
-
-	  TClonesArray &bp_rot = *p_rot;
-	  new(bp_rot[numGoodTrack-1]) TVector3(mom3);
-	  mom.push_back(   aPart1->GetP());
-
-
-	  // Original momentum
-	  if( BeamAngle ) {
-	    TClonesArray &bp_org = *p_org;
-	    new(bp_org[numGoodTrack-1]) TVector3(aPart1->GetMomentum());
-
-	    theta_xz.push_back(aX);
-	    theta_yz.push_back(bY);
-	  }
-	
-	  unitP += mom3.Unit();
-	  unitP_lang += wgt.at(numGoodTrack-1)*momPt.Unit();  // v2.0.9
-
-	  if(numGoodTrack != wgt.size()) cout << "Error in number of tracks" << endl;
-	
 	}
+
+	//	cout << "nLoop " << nLoop << " / " << nGoodTrack << " - " << numGoodTrack << " : " << aPart1->GetReactionPlaneFlag()<< endl;
 	nLoop++;
       }
     }
 
     mtrack = trackID.size();
 
+    //    cout << " mtrack " << mtrack << endl;
+
     if(mtrack > 0) {
-      SubEventAnalysis();
-      
-      AzmAngleRPTReactionPlane();
-      
       mflw->Fill();
+      hgtc->Fill(mtrack);
     }
-
-    if(ntrack[3]>0)  hgtc->Fill(ntrack[3]);
-
   }
 
 
@@ -191,17 +142,15 @@ void SetEnvironment()
 
   sRun = gSystem -> Getenv("RUN");  // RUN number
   sVer = gSystem -> Getenv("VER");  // Version ID
-  sbRun= gSystem -> Getenv("BRUN"); // If BRUN=0, flattening is not done.
-  sbVer= gSystem -> Getenv("BVER"); // BRUN version
-  sBinp= gSystem -> Getenv("SBPR"); 
-
   sMix = gSystem -> Getenv("MIX");
   sRot = gSystem -> Getenv("ROT");
 
+  
 
-  if(sRun =="" || sVer == "" ||sMix == "" || sbRun == "" || sbVer == "" || sBinp == "" ||!DefineVersion()) {
+
+  if(sRun =="" || sVer == "" ||sMix == "" ||!DefineVersion()) {
     cout << " Please type " << endl;
-    cout << "$ RUN=#### VER=#.#.# MIX=0(real) or 1(mix) BRUN=%d BVER=# SBPR=pz or theta root AsmFlw_getMixing(Number of event) " << endl;
+    cout << "$ RUN=#### VER=#.#.# MIX=0(real) or 1(mix)  root AsmFlw_getFlatten2Dcrr.C(Number of event) " << endl;
     exit(0);
   }
 
@@ -300,7 +249,6 @@ void Open()
 
 
   aParticleArray   = new TClonesArray("STParticle",150);
-  mixParticleArray = new TClonesArray("STParticle",150);
 
   fTree->SetBranchAddress("STParticle",&aParticleArray);
   fTree->SetBranchAddress("ntrack",ntrack);
@@ -327,49 +275,14 @@ void Initialize()
 
   trackID.clear();
 
-  unitP   = TVector3(0,0,0);
-  unitP_lang  = TVector2(0,0);
-  unitP_1 = TVector2(0.,0.);
-  unitP_2 = TVector2(0.,0.);
-
   mtrack = 0;
-  mtrack_1 = 0;
-  mtrack_2 = 0;
-	
-  
+  mxntrk = 0;  
   numGoodTrack = 0;
   for(Int_t i = 0; i< 7; i++) ntrack[i];
   
   event.clear();
-  pid.clear();
-  itheta.clear();
-  iphi.clear();
-  pt.clear();
-  px.clear();
-  py.clear();
-  pz.clear();
-  mom.clear();
-  dedx.clear();
-  deltphi.clear();
-  rpphi.clear();
-  rapid.clear();
-  prapid.clear();
-  rpxt.clear();
-  rpxb.clear();
-  etot.clear();
-  wgt.clear();
-  mxntrk.clear();
-
-  p_rot->Clear();
-  if( BeamAngle ){
-    p_org->Clear();
-
-    theta_xz.clear();
-    theta_yz.clear();
-  }
 
   aParticleArray->Clear();
-  mixParticleArray->Clear();
 
   TDatime dtime;
   rnd.SetSeed(dtime.Get());
@@ -482,47 +395,14 @@ void OutputTree(Long64_t nmax)
     // mflw->Branch("bY",&bY,"bY/D");
   }
 
+  mflw->Branch("STParticle",&aParticleArray);
+
   mflw->Branch("ntrack",ntrack,"ntrack[7]/I");
-  mflw->Branch("numGoodTrack",&numGoodTrack);
   mflw->Branch("mtrack",&mtrack,"mtrack/I");
-  mflw->Branch("mtrack_1",&mtrack_1,"mtrack_1/I");
-  mflw->Branch("mtrack_2",&mtrack_2,"mtrack_1/I");
   mflw->Branch("event",&event);
   mflw->Branch("mxntrk",&mxntrk);
-  mflw->Branch("pid",&pid);
-  mflw->Branch("px",&px);
-  mflw->Branch("py",&py);
-  mflw->Branch("pz",&pz);
-  mflw->Branch("mom",&mom);
-  mflw->Branch("p_rot" ,&p_rot);
-  mflw->Branch("dedx",&dedx);
-  mflw->Branch("deltphi",&deltphi);
-  mflw->Branch("rpphi",&rpphi);
-  mflw->Branch("wgt",&wgt);
-  mflw->Branch("iphi",&iphi);
-  mflw->Branch("rapid",&rapid);
-  mflw->Branch("prapid",&prapid);
-  mflw->Branch("rpxt",&rpxt);
-  mflw->Branch("rpxb",&rpxb);
-  mflw->Branch("etot",&etot);
-  mflw->Branch("unitP",&unitP);
-  mflw->Branch("unitP_1",&unitP_1);
-  mflw->Branch("unitP_2",&unitP_2);
-  mflw->Branch("unitP_lang",&unitP_lang);
-  mflw->Branch("kymult",&kymult,"kymult/I");
 
-  if( BeamAngle ) {
-    mflw->Branch("p_org" ,&p_org);
-    mflw->Branch("theta_xz",&theta_xz);
-    mflw->Branch("theta_yz",&theta_yz);
-  }
-
-  
-  histGT       = new TH1I("histGT","generated tracks",50,0,50);
-  histMixEvt   = new TH1I("histMixEvt","mixed event ID",10000,0,10000);
-  histMixTrack = new TH1I("histMixTrack","mixed number of track",100,0,100);
   hgtc         = new TH1I("hgtc","number of good fragment",100,0,100);
-  hRPrapd      = new TH1D("hRPrapd","Rapidity region for R.P. all",100,0.,5);
 }
 
 Long64_t GetRandomNumTrack()
@@ -532,8 +412,8 @@ Long64_t GetRandomNumTrack()
 
   Int_t itime = dtime.Get();
 
-  //  gRandom = new TRandom3(0);
-  //  gRandom->SetSeed(itime);
+  // gRandom = new TRandom3(0);
+  // gRandom->SetSeed(itime);
 
   if(!histGT_r){
     cout << " no histgram was found for randowm number " << endl;
@@ -542,7 +422,6 @@ Long64_t GetRandomNumTrack()
 
   Long64_t bcont = (Long64_t)histGT_r->GetRandom();
 
-  histGT->Fill(bcont);
 
   return bcont;
 }
@@ -565,40 +444,6 @@ STParticle *GetMixedTrack(Long64_t *ival, Int_t *kval)
   STParticle *mixPart = NULL;
   static Long64_t mevt = *ival;
 
-  //  cout << " getmixed track " << mevt << " --> " << *ival << " nentry " << nEntry << endl;
-
-  //  UInt_t  mevt;
-
-  // vector<Bool_t>  sevt;
-  // sevt.resize(100);
-
-  // while(kTRUE){
-    
-  //   mevt  =  (UInt_t)pran.Uniform(1,100);
-  //   if(sevt[mevt] == 1) contine;
-
-  //   sevt[mevt] = 1;
-  //   mevt += *ival;
-  //   if( mevt > nEntry )
-  //     mevt -= nEntry;   
-    
-  //   fTree->GetEntry(mevt);
-  //   if( ntrack[0] > 0 ) break;
-
-  // }
-
-  // ---------- random
-  // while(kTRUE){
-  //   mevt  =  (UInt_t)pran.Uniform(0,nEntry);
-  //   if(mevt != *ival) {
-  //     fTree->GetEntry(mevt);
-  //     if( ntrack[0] > 0 ) break;
-  //   }
-  // }
-
-  //   cout << " Event out " << mevt << endl;  
-  //  if(mevt >= nEntry ) mevt = 0;
-
   // ---------- shfiting -- search similar multiplcity events
   while(kTRUE){	
     mevt += 2;
@@ -617,30 +462,24 @@ STParticle *GetMixedTrack(Long64_t *ival, Int_t *kval)
 	if(kLoop > 1) cout << " Too much loops " << kLoop << " kval " << *kval << " mevt " << mevt << " / " << nEntry <<  endl;
       }
     }
-    //    cout << " get mixed event " << mevt << " / " << nEntry << endl;
+    //        cout << " get mixed event " << mevt << " / " << nEntry << endl;
 
     *kval = ntrack[3];
-
-    Int_t nmixTrack = aParticleArray->GetEntries();
-    Int_t imixTrack = (Int_t)pran.Uniform(0,nmixTrack);
-
-    //    cout << mevt << " itrack " << imixTrack << " / " << nmixTrack << endl;
-
-
     if( BeamAngle ) {
       aX = ProjA/1000.;
       bY = ProjB/1000.;
     }
 	  
-    // cout << " Event " << mevt  
-    // 	 << "  imixTrack/nmixTrack " << imixTrack << "/" << nmixTrack << endl;
 
-    if(imixTrack < aParticleArray -> GetEntries() ) {
+    Int_t nmixTrack = aParticleArray->GetEntries();
+
+    Int_t imixTrack = (Int_t)pran.Uniform(0,nmixTrack);
+
+    if( imixTrack < nmixTrack ) {
       mixPart = (STParticle*) aParticleArray->At(imixTrack);	        
-      histMixEvt  ->Fill(mevt);
-      histMixTrack->Fill(nmixTrack);
       break;
     }
+
   }
 
   *ival = mevt; 
@@ -655,30 +494,30 @@ void RotateAsBeamAngle(STParticle *apart, TVector3 *p1, TVector2 *pt)
   *pt  = apart->GetRotatedPt();
 }
 
-void SetPtWeight(STParticle *apart, Double_t *rpd, Double_t *psudr)
+void SetPtWeight(STParticle *apart)
 {
 
   Int_t    gpid  = GetPID(apart->GetP(),apart->GetTotaldEdx()); // for temporal proton pid
 
+  Double_t psudr = apart->GetpsudoRapidity();
+  Double_t rpd   = apart->GetRapidity();
+
+
   if(gpid != 0){
     apart->SetPID(gpid);
-    pid.push_back(gpid);
-    *rpd = apart->GetRapidity();
+    rpd = apart->GetRapidity();
 
-    if( *rpd < 0.4 ) 
-      wgt.push_back(-1);
+    if( rpd < 0.4 ) 
+      apart->SetRPWeight(-1);
     else
-      wgt.push_back(1);
+      apart->SetRPWeight(1);
   }
   else{
-    pid.push_back(apart->GetLinearPID());
-    if( *psudr < 1.4 )
-      wgt.push_back(-1);
+    if( psudr < 1.4 )
+      apart->SetRPWeight(-1);
     else
-      wgt.push_back(1); 
+      apart->SetRPWeight(1);
   }
-      
-
 }
 
 Bool_t DefineVersion()
@@ -743,7 +582,6 @@ UInt_t SetDatabaseFiles()
 	  break;
       }
       if(ihm > 0 ) {
-	mtkbin.push_back(ihm);
 	ihmsum += ihm;
 	cout << " ihm " << ihm  << " <- " << imtk << " sum " << ihmsum << endl;
       }
@@ -764,7 +602,6 @@ UInt_t SetDatabaseFiles()
   cout << " nBin " << nBin << endl;
 
   vector<TString>::iterator itb;
-  pbinmin.clear();
   UInt_t ihm = 0;
  
   for(itb = vfname.begin(); itb != vfname.end(); itb++, ihm++){
@@ -777,8 +614,7 @@ UInt_t SetDatabaseFiles()
     flowcorr->SetFileName(vfname.at(ihm));
     flowcorr->GetCorrectionFactor();
     
-    pbinmin.push_back(make_pair(flowcorr->GetBin_min(0),flowcorr->GetBin_min(1)));
-    cout << " $$$$$$$$$$$ ---->  nbin " << ihm  << " " << pbinmin.at(ihm).first << " : "<< pbinmin.at(ihm).second << endl;    
+    cout << " $$$$$$$$$$$ ---->  nbin " << ihm  << " " << flowcorr->GetBin_min(0) << " : "<< flowcorr->GetBin_min(1) << endl;    
   }
 
   binpara   = flowcorr->GetBinParameter(1);
@@ -788,44 +624,6 @@ UInt_t SetDatabaseFiles()
   return nBin;    
 }
 
-
-Int_t GetMultiplicityCorretionIndex(UInt_t ival)
-{
-  vector< pair<Double_t, Double_t> >::iterator itr;
-
-  UInt_t ink = mtkbin.size()-1;
-
-  for(itr = pbinmin.end()-1; itr != pbinmin.begin(); itr-= mtkbin.at(ink), ink--){
-    
-    //    cout << "mult " << itr->first<< " : " << itr->second << " -- " << mtkbin.at(ink) << " at " << itr - pbinmin.begin()<< endl;
-
-    if(ival >= itr->first) {
-      return itr - pbinmin.begin();
-    }
-  }
-
-  return -1;
-}
-
-Int_t GetThetaCorretionIndex(Double_t fval, Int_t ival)
-{
-
-  vector< pair<Double_t, Double_t> >::iterator itr;
-  itr =  pbinmin.begin();
-  itr += ival;
-
-  for(itr; itr != pbinmin.begin()-1; itr--){
-    
-    if( fval >= itr->second) {
-      
-      return itr - pbinmin.begin();
-    }
-
-  }
-
-
-  return -1;
-}
 
 void CheckPlot(UInt_t ival)
 {
@@ -871,84 +669,3 @@ void CheckPlot(UInt_t ival)
 
 }
 
-void SubEventAnalysis()
-{
-  //subevent analysis
-
-  Int_t itra = 0;
-
-  while( itra < mtrack ){
-    Int_t isel = rnd.Integer(2);
-      
-    if( mtrack_1 > mtrack/2 && mtrack_2 > mtrack/2 ) break; 
-      
-    if( isel == 0 && mtrack_1 < mtrack/2 ) {
-      unitP_1 += wgt.at(itra)*pt.at(itra).Unit();
-      mtrack_1++;
-      //	cout << " _1 " << itra << endl;
-      itra++;
-    }
-    else if( mtrack_2 <= mtrack/2 ) {
-      unitP_2 += wgt.at(itra)*pt.at(itra).Unit();
-      mtrack_2++;
-      //	cout << " _2 " << itra << endl;
-      itra++;
-    }
-      
-  }
-
-}
-
-void AzmAngleRPTReactionPlane()
-{
-  for(Int_t i = 0; i < mtrack; i++){
-
-    TVector2 mExcRP(0.,0.);
-    TVector2 mExcRP_full(0.,0.);
-
-    for(Int_t k = 0; k < mtrack; k++){
-
-      if(i != k ) {
-	mExcRP += pt.at(k).Unit();
-	hRPrapd->Fill(prapid.at(k));
-	mExcRP_full += (Double_t)wgt.at(k) * pt.at(k).Unit();
-      }
-    }
-    rpphi.push_back(    TVector2::Phi_mpi_pi( mExcRP_full.Phi() ));
-    deltphi.push_back(  TVector2::Phi_mpi_pi( pt.at(i).Phi()-mExcRP.Phi()));
-  }
-}
-
-
-void FlatteningCorrection(TVector3 *p1, Int_t ival)
-{
-  
-  Int_t    mtkBIN = ival;
-  UInt_t   iBin   = 999;
-  Double_t binParameter;
-
-  if( binpara == "pz") 
-    binParameter = p1->Z();
-  else if( binpara == "theta")
-    binParameter = p1->Theta();
-  else {
-    std::cout << " This DB is not allowed " << binpara << std::endl;
-    exit(0);
-  }
-
-  Int_t iBIN = GetThetaCorretionIndex(binParameter, mtkBIN);
-	    
-  if(iBIN >= 0){
-    flowcorr = (STFlowCorrection*)aflowcorrArray->At(iBIN);
-  }
-  else{
-    cout << " A correction file is not found. " << binParameter << " with " << ntrack[3] << endl;
-    exit(0);
-  }
-
-	
-  flowcorr->Add(ntrack[3], p1->Phi(), p1->Theta());
-
-  p1->SetPhi( flowcorr->GetCorrection(p1->Phi()) );
-
-}
