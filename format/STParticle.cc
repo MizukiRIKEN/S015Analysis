@@ -21,6 +21,21 @@ STParticle::STParticle(STTrack *atrack)
   SetTrack(atrack);
 }
 
+STParticle::STParticle(const STParticle &cp)
+{
+  *this = cp;
+
+}
+
+STParticle &STParticle::operator=(const STParticle &cp)
+{
+  if( this != &cp )
+    *this = cp;
+
+  return *this;
+}
+
+
 void STParticle::CheckTrackonTarget()
 {
   TVector3 trackatTarget  = STTrackCandidate::GetTargetPlaneVertex();
@@ -37,7 +52,7 @@ void STParticle::Clear(Option_t *option)
 {
   STTrack::Clear();
 
-  fRotatedMomentum = TVector3(-9999,-9999,-9999);
+  fRotatedP3 = TVector3(-9999,-9999,-9999);
 
   fP            = -9999.;
   fdEdx         = -9999.;
@@ -52,6 +67,22 @@ void STParticle::Clear(Option_t *option)
 
   fpipid       = 0;
   fPID         = 0;
+
+
+  // for flow
+  ffltnP3 = TVector3(-9999,-9999,-9999);
+  ffltnPt = TVector2(-9999,-9999);
+
+  frpphi = -10.;
+  fwgt   = 0.;
+  fcorrBin[0] = -1;  
+  fcorrBin[1] = -1;
+  
+  fmxevt = -1;
+  fmxntrk = -1;
+  fReactionPlane = 0;
+
+  fcorrPt = ffltnPt;
 }
 
 void STParticle::SetTrack(STTrack *atrack)
@@ -67,6 +98,10 @@ void STParticle::SetProperty()
   fphi  = STTrackCandidate::GetMomentum().Phi();
   fP    = STTrackCandidate::GetP();
   fdEdx = STTrackCandidate::GetTotaldEdx();
+
+  TVector3 mom = STTrackCandidate::GetMomentum();
+  fcorrPt = TVector2( mom.X(), mom.Y() );
+
   
   SetLinearPID();
   CheckTrackonTarget();
@@ -74,6 +109,8 @@ void STParticle::SetProperty()
   CheckKYOTOHit();
 
   SetPiPID();
+
+  
 }
 
 void STParticle::SetLinearPID()
@@ -140,7 +177,7 @@ Double_t STParticle::GetpsudoRapidity()
 {
   TVector3 pp;
   if( bRotated )
-    pp = fRotatedMomentum;
+    pp = fRotatedP3;
   else
     pp = STTrackCandidate::GetMomentum();
 
@@ -152,9 +189,9 @@ Double_t STParticle::GetpsudoRapidity()
 Double_t STParticle::GetRapidity()
 {
   if( bRotated ) {
-    fphi  = fRotatedMomentum.Phi();
-    fP    = fRotatedMomentum.Mag();
-    fPz   = fRotatedMomentum.Z();
+    fphi  = fRotatedP3.Phi();
+    fP    = fRotatedP3.Mag();
+    fPz   = fRotatedP3.Z();
   }
 
   if(fMass != 0 ){
@@ -173,14 +210,31 @@ Double_t STParticle::GetRapidity()
 
 void  STParticle::RotateAlongBeamDirection(Double_t valuex, Double_t valuey)
 {
-  fRotatedMomentum = STTrackCandidate::GetMomentum();
+  fRotatedP3 = STTrackCandidate::GetMomentum();
 
-  fRotatedMomentum.RotateY(-valuex);
-  fRotatedMomentum.RotateX(-valuey);
+  fRotatedP3.RotateY(-valuex);
+  fRotatedP3.RotateX(-valuey);
 
-  fRotatedPt = TVector2(fRotatedMomentum.X(),fRotatedMomentum.Y());
+  fRotatedPt = TVector2(fRotatedP3.X(),fRotatedP3.Y());
+
+  fcorrPt = fRotatedPt;
 
   bRotated = kTRUE;
+}
+
+void STParticle::Flattening(Double_t value)
+{
+  ffltnP3  = fRotatedP3;
+
+  ffltnP3.SetPhi(value);
+
+  ffltnPt  = TVector2(ffltnP3.X(), ffltnP3.Y());
+
+  fcorrPt  = ffltnPt;
+
+  frphi    = ffltnP3.Phi();
+
+  bFlatten = kTRUE;
 }
 
 void STParticle::SetPiPID()

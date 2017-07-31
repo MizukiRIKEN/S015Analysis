@@ -19,45 +19,45 @@ int main(int argc, char ** argv)
 
   if(argc==3) kineticEnergy = atoi(argv[2]);
 
-	G4RunManager *runManager = new G4RunManager();
+  G4RunManager *runManager = new G4RunManager();
 
-	exampleDetectorConstruction* exampleDC = new exampleDetectorConstruction();
-	runManager -> SetUserInitialization(exampleDC);
+  exampleDetectorConstruction* exampleDC = new exampleDetectorConstruction();
+  runManager -> SetUserInitialization(exampleDC);
 
   G4VModularPhysicsList* physicsList = new QGSP_BERT;
   runManager->SetUserInitialization(physicsList);
 
-	examplePrimaryGeneratorAction* examplePGA = new examplePrimaryGeneratorAction(kineticEnergy);
-	runManager -> SetUserAction(examplePGA);
+  examplePrimaryGeneratorAction* examplePGA = new examplePrimaryGeneratorAction(kineticEnergy);
+  runManager -> SetUserAction(examplePGA);
 
-	exampleEventAction* exampleEA = new exampleEventAction(kineticEnergy);
-	runManager -> SetUserAction(exampleEA);
+  exampleEventAction* exampleEA = new exampleEventAction(kineticEnergy);
+  runManager -> SetUserAction(exampleEA);
 
-	runManager -> Initialize();
+  runManager -> Initialize();
 
-	G4VisManager* visManager = new G4VisExecutive();
-	visManager -> Initialize();
+  G4VisManager* visManager = new G4VisExecutive();
+  visManager -> Initialize();
 
-	if (argc == 1)
-	{
-		G4UIsession* session = new G4UIterminal(new G4UItcsh);
-		session -> SessionStart();
-		delete session;
-	}
-	else
-	{
-		G4String command = "/control/execute ";
-		G4String fileName = argv[1];
+  if (argc == 1)
+    {
+      G4UIsession* session = new G4UIterminal(new G4UItcsh);
+      session -> SessionStart();
+      delete session;
+    }
+  else
+    {
+      G4String command = "/control/execute ";
+      G4String fileName = argv[1];
 
-		G4UImanager* UI = G4UImanager::GetUIpointer();
-		UI -> ApplyCommand(command + fileName);
+      G4UImanager* UI = G4UImanager::GetUIpointer();
+      UI -> ApplyCommand(command + fileName);
 		
-		G4UIsession* session = new G4UIterminal(new G4UItcsh);
-		//session -> SessionStart();
-		delete session;
-	}
+      G4UIsession* session = new G4UIterminal(new G4UItcsh);
+      //session -> SessionStart();
+      delete session;
+    }
 
-	delete runManager;
+  delete runManager;
 
-	return 0;
+  return 0;
 }

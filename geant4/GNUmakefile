@@ -1,7 +1,7 @@
-name			:= example
+name     	:= example
 G4TARGET	:= $(name)
 G4EXLIB		:= true
-G4WORKDIR := $(shell pwd)
+G4WORKDIR       := $(shell pwd)
 
 .PHONY: all
 all: lib bin
