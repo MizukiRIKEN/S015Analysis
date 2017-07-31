@@ -281,8 +281,19 @@ void STFlowCorrection::FourierCorrection(vector<Double_t> &val)
   }
 }
 
+void STFlowCorrection::SetDirectory()
+{
+  gSystem->cd("db");
+  
+  // if(!gSystem->cd(fname)) {
+  //   gSystem->MakeDirectory(fname);
+  //   gSystem->cd(fname);
+  // }
+}
+
 UInt_t STFlowCorrection::SaveCorrectionFactor(TString comm)
 {
+  SetDirectory();
   
   fstream fout;
 

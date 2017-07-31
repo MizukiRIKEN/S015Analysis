@@ -46,6 +46,7 @@ Bool_t  BeamAngle;
 Int_t   iAsm;
 TString sbRun;
 TString sbVer;
+TString scVer;
 TString sBinp;
 UInt_t  nBin; 
 TString binpara;

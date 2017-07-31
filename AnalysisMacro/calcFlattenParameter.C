@@ -81,7 +81,6 @@ TBranch *bpx=0;
 TBranch *bpy=0;
 TBranch *bdeltphi=0;
 
-UInt_t im = 0;
 UInt_t m_bgn = 0;
 UInt_t m_end = 2;
 
@@ -89,24 +88,22 @@ void flatten_iphi_mtrkthetabin();
 void flatten_iphi_mtrkthetabin2();
 void OutputTree(TChain *rCh);
 
-void calcFlattenParameter(UInt_t ival = 0)
+void calcFlattenParameter()
 {
   gROOT->Reset();
 
-  im = ival;
+  UInt_t im = 0; 
+  TString sMix = gSystem -> Getenv("MIX");
+  if(sMix != "")
+    im = atoi(sMix);
 
-  UInt_t ichain = 0;
-  if( im != 1){
-    gROOT->Macro("openRM.C");
-    rChain[0] = (TChain*)gROOT->FindObject(Form("rChain%d",ichain));
-    ichain++;
-    if(rChain[0] == NULL ) exit(0);
-  }
 
-  if( im != 0){
-    gROOT->Macro("openRM.C(1)");
-    rChain[1] = (TChain*)gROOT->FindObject(Form("rChain%d",ichain));
-    if(rChain[1] == NULL ) exit(0);
+  cout << " im " << im << endl;
+ 
+  if( im < 2){
+    gROOT->Macro(Form("openRM.C(%d)",im));
+    rChain[im] = (TChain*)gROOT->FindObject(Form("rChain%d",im));
+    //    if(rChain[im] == NULL ) exit(0);
   }
 
 

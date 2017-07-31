@@ -68,8 +68,12 @@ void getFlatten2Dcorrected(Long64_t nmax = -1)
 	  FlatteningCorrection(aPart1,mtkBIN);
 	
 	  unitP += aPart1->GetFlattenMomentum().Unit();
-	  
-	  unitP_lang += aPart1->GetRPWeight() * (aPart1->GetFlattenPt()).Unit();
+
+	  if(aPart1->GetFlattenMomentum().Theta() >= 0.2 && aPart1->GetFlattenMomentum().Theta() <0.4) {
+	    ntrack[4]++;
+	    aPart1->SetReactionPlaneFlag(2);
+	    unitP_lang += aPart1->GetRPWeight() * (aPart1->GetFlattenPt()).Unit();
+	  }
 	}
       }
 
@@ -100,19 +104,18 @@ void SetEnvironment()
   sVer = gSystem -> Getenv("VER");  // Version ID
   sbRun= gSystem -> Getenv("BRUN"); // If BRUN=0, flattening is not done.
   sbVer= gSystem -> Getenv("BVER"); // BRUN version
-  //  sBinp= gSystem -> Getenv("SBPR"); 
+  scVer= gSystem -> Getenv("CVER"); // corrected version
 
   sMix = gSystem -> Getenv("MIX");
   
 
 
-  if(sRun =="" || sVer == "" ||sMix == "" || sbRun == "" || sbVer == "" ||!DefineVersion()) {
+  if(sRun =="" || sVer == "" ||sMix == "" || sbRun == "" || sbVer == "" || scVer == ""||!DefineVersion()) {
     cout << " Please type " << endl;
-    cout << "$ RUN=#### VER=#.#.# MIX=0(real) or 1(mix) BRUN=%d BVER=# SBPR=(pz, theta or mtktheta) root getFlatten2Dcorrected.C(Number of event) " << endl;
+    cout << "$ RUN=#### VER=#.#.# MIX=0(real) or 1(mix) BRUN=%d CVER=%d root getFlatten2Dcorrected.C(Number of event) " << endl;
     exit(0);
   }
 
-  cout << "sBinp = " << sBinp << " Flatten RUN = " << sbRun << endl;
 
 
   // Real or mixed event 
@@ -165,7 +168,6 @@ void Open()
 
   if( bMix )
     foutname = Form("run%d_mxflw_v"+sVer,iRun);
-
 
   cout << foutname << endl;
 
@@ -245,8 +247,8 @@ void LoadPIDFile()
 
 void OutputTree()
 {
-
-  foutname += "_crdb"+sbRun+"v"+sbVer+".root";
+  //@@@
+  foutname += "_crdb"+sbRun+"v"+sbVer+"_cv"+scVer+".root";
 
   TString fo = foutname;
 
@@ -262,7 +264,7 @@ void OutputTree()
     }      
   }
   else
-    fout  = new TFile(foutname,"recreate");
+    fout  = new TFile("../data/"+foutname,"recreate");
 
 
 
@@ -487,7 +489,8 @@ void SubEventAnalysis()
   TIter next(aParticleArray);
   STParticle *aPart1 = NULL;
 
-  UInt_t np = aParticleArray->GetEntries();
+  //  UInt_t np = aParticleArray->GetEntries();
+  UInt_t np = ntrack[4];
   Float_t arr[np];
   rnd.RndmArray(np, arr);
   UInt_t isel = 0;
@@ -495,30 +498,34 @@ void SubEventAnalysis()
 
   while( (aPart1 = (STParticle*)next()) ) {
     
-    if(aPart1->GetReactionPlaneFlag()){
+    if(aPart1->GetReactionPlaneFlag()==2){
       Double_t wt = aPart1->GetRPWeight();
       TVector2 pt = aPart1->GetCorrectedPt();
 
 
 	//      Int_t isel = rnd.Integer(2);
       
-      if( (UInt_t)(arr[isel]*np)%2 ==0 && mtrack_1 < mtrack/2 ) {
+      if( (UInt_t)(arr[isel]*np)%2 ==0 && mtrack_1 < ntrack[4]/2 ) {
 	unitP_1 += wt * pt.Unit();
+
+	aPart1->SetReactionPlaneFlag(3);
 	mtrack_1++;
 	//	cout << " _1 " << mtrack_1 << " / " << itra <<  endl;
       }
-      else if( mtrack_2 < mtrack/2 ) {
+      else if( mtrack_2 < ntrack[4]/2 ) {
 	unitP_2 += wt * pt.Unit();
+	aPart1->SetReactionPlaneFlag(4);
 	mtrack_2++;
       }
       else{
 	unitP_1 += wt * pt.Unit();
+	aPart1->SetReactionPlaneFlag(3);
 	mtrack_1++;
       }
 
       isel++;
       //cout << " _2 " << mtrack_2 << " / " << itra << endl;     
-      if( mtrack_1 + mtrack_2 > mtrack ) break; 
+      if( mtrack_1 + mtrack_2 > ntrack[4] ) break; 
 
     }
   }
@@ -535,7 +542,7 @@ void AzmAngleRPTReactionPlane()
 
   while( (aPart1 = (STParticle*)next()) ) {
     
-    if(aPart1->GetReactionPlaneFlag()){
+    if(aPart1->GetReactionPlaneFlag()>0){
       Double_t wt = aPart1->GetRPWeight();
       TVector2 pt = aPart1->GetCorrectedPt();
 
@@ -547,7 +554,7 @@ void AzmAngleRPTReactionPlane()
 
       while( (restPart = (STParticle*)rest()) ) {
 
-	if( aPart1 != restPart ) {
+	if( aPart1 != restPart && restPart->GetReactionPlaneFlag()==2 ) {
 
 	  Double_t wt_rp = restPart->GetRPWeight();
 	  TVector2 pt_rp = restPart->GetCorrectedPt();

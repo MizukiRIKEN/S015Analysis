@@ -11,6 +11,7 @@
 #include "TFile.h"
 #include "TChain.h"
 #include "TROOT.h"
+#include "TSystem.h"
 
 class STFlowCorrection : public TObject {
 
@@ -98,6 +99,7 @@ private:
   void   SetFileName();
   void   Init();
   void   ShowParameters();
+  void   SetDirectory();
 
   ClassDef(STFlowCorrection,0);
 };

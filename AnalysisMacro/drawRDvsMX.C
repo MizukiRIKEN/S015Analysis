@@ -1,8 +1,6 @@
 TCanvas *cc[6];
 TChain  *rChain[2];
 
-
-
 const Int_t nbinx = 30;
 TH1D *h2s_r[nbinx];
 TH1D *h2s_m[nbinx];
@@ -20,20 +18,25 @@ TH1D *h1phimid_rm;
 TString printName;
 TF1 *f1;
 
-UInt_t im;
 UInt_t m_bgn=0;
 UInt_t m_end=2;
 
-void drawRDvsMX(UInt_t ival = 0)
+
+void drawRDvsMX()
 {
   gROOT->Reset();
-  im = ival;
+  
+  UInt_t im = 0;
 
-  if(im == 0){ // REAL only                                                                                                                       
+  TString sMix = gSystem -> Getenv("MIX");
+  if(sMix != "")
+    im = atoi(sMix);
+
+  if(im == 0){ // REAL only
     m_bgn = 0;
     m_end = 1;
   }
-  else if(im == 1){ // MIXed only                                                                                                                 
+  else if(im == 1){ // MIXed only 
     m_bgn = 1;
     m_end = 2;
   }
@@ -75,15 +78,6 @@ void phi()
 
   UInt_t m_bgn = 0;
   UInt_t m_end = 2;
-
-  if(im == 0){ // REAL only
-    m_bgn = 0;
-    m_end = 1;
-  }
-  else if(im == 1){ // MIXed only   
-    m_bgn = 1;
-    m_end = 2;
-  }
 
   //plot <phi> pseudorapidity 
   TH2D *hphiy[2];
