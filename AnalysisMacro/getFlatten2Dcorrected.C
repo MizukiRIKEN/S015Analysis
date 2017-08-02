@@ -69,7 +69,7 @@ void getFlatten2Dcorrected(Long64_t nmax = -1)
 	
 	  unitP += aPart1->GetFlattenMomentum().Unit();
 
-	  if(aPart1->GetFlattenMomentum().Theta() >= 0.2 && aPart1->GetFlattenMomentum().Theta() <0.4) {
+	  if(aPart1->GetFlattenMomentum().Theta() >= 0. && aPart1->GetFlattenMomentum().Theta() <0.6) {
 	    ntrack[4]++;
 	    aPart1->SetReactionPlaneFlag(2);
 	    unitP_lang += aPart1->GetRPWeight() * (aPart1->GetFlattenPt()).Unit();
@@ -77,11 +77,10 @@ void getFlatten2Dcorrected(Long64_t nmax = -1)
 	}
       }
 
+      AzmAngleRPTReactionPlane();
 
       SubEventAnalysis();
-      
-      AzmAngleRPTReactionPlane();
-      
+            
       mflw->Fill();
     }
   }
@@ -554,7 +553,7 @@ void AzmAngleRPTReactionPlane()
 
       while( (restPart = (STParticle*)rest()) ) {
 
-	if( aPart1 != restPart && restPart->GetReactionPlaneFlag()==2 ) {
+	if( aPart1 != restPart && restPart->GetReactionPlaneFlag()>= 2 ) {
 
 	  Double_t wt_rp = restPart->GetRPWeight();
 	  TVector2 pt_rp = restPart->GetCorrectedPt();
