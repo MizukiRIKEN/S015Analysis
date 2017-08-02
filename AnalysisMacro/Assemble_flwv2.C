@@ -1,6 +1,6 @@
-#include "Assemble_flwv1.h"
+#include "Assemble_flwv2.h"
 //----------------------------------------------------------------------
-// Macro: Assemble_flwv1.C
+// Macro: Assemble_flwv2.C
 //  (c) Mizuki Kurata-Nishimura
 //   2017 Mar. 14 
 //----------------------------------------
@@ -11,28 +11,23 @@ void Setup()
   sRun = gSystem -> Getenv("RUN");
   sVer = gSystem -> Getenv("VER");
 
-  if( sRun=="" || sVer=="") {
+  if( sRun=="" || sVer=="" || !DefineVersion() ) {
     cout << "Plase type " << endl;
-    cout << "$ RUN=#### VER=# root Assemble_flwv1.C" << endl;
+    cout << "$ RUN=#### VER=#.# root Assemble_flwv2.C" << endl;
     exit(0);
   }
 
   iRun = atoi(sRun);
 
-
   BigRIPS  = kTRUE;  //kFALSE;
-  KyotoArry= kTRUE;
+  KyotoArry= kFALSE; //kTRUE;
   KATANA   = kFALSE; //kTRUE;
 }
 
-void Assemble_flwv1(Int_t nevt = -1)
+void Assemble_flwv2(Int_t nevt = -1)
 {
-  //2334//2480//2189//2903//2477
   //////////////////////////////////////////////////////////
-  //   This file has been automatically generated 
-  //     (Sat Apr  9 22:15:44 2016 by ROOT version6.06/02)
-  //   from TTree beam/bigrips
-  //   found on file: ../beam1807.root
+  // The calibrated beam_run#.ridf.root can be loaded.
   //////////////////////////////////////////////////////////
 
   Setup();
@@ -56,7 +51,15 @@ void Assemble_flwv1(Int_t nevt = -1)
   Long64_t nEvents = 0;
   if(BigRIPS) {
     SetBigRIPS();
-    if( ribfChain) nEvents = ribfChain->GetEntries();
+    if( ribfChain) {
+      nEvents   = ribfChain->GetEntries();
+      Int_t nEventsBDC = bdcChain->GetEntries();
+
+      if(nEvents != nEventsBDC) {
+	cout << "Inconsistent event number in bigRIS RIDF (quit)" << endl;
+	exit(0);
+      }
+    }
     cout << "Number of events in RIDF: " << nEvents << endl;
   }
   //----- KATANA Array --------------------  
@@ -117,10 +120,10 @@ void Assemble_flwv1(Int_t nevt = -1)
 
 
     // --------------- RIDF --------------
-    if(BigRIPS)
+    if(BigRIPS) {
       ribfChain->GetEntry(i);
-
-    //    cout << " tx : " << tx << " ty : " << ty << endl;
+      bdcChain->GetEntry(i);
+    }
 
     // --------------- TPC ---------------
     fChain -> GetEntry(i);
@@ -146,12 +149,12 @@ void Assemble_flwv1(Int_t nevt = -1)
     }
     
 
-    // --- Beam on the target  --------------------
-    if(CheckBeamPosition(TVector2(tx,ty))) bevt[0] = 1;
-
     // --- BDC offset --------------------
     SetBeamOnTarget(TVector2(tx,ty));
     
+    // --- Beam on the target  --------------------
+    if(CheckBeamPosition()) bevt[0] = 1;
+
     bmpid = GetBeamPID();
     
     // --- Vertex selection --------------------
@@ -208,6 +211,16 @@ void Assemble_flwv1(Int_t nevt = -1)
       aParticle->SetBestTrackFlag();
       if(aParticle->GetBestTrackFlag()) ntrack[3]++;
 
+
+      // cout << " GetVertexAtTargetFlag  "      <<  aParticle->GetVertexAtTargetFlag() 
+      // 	   << " GetVertexZAtTargetFlag "      <<  aParticle->GetVertexZAtTargetFlag()
+      // 	   << " GetVertexBDCCorrelationFlag " <<  aParticle->GetVertexBDCCorrelationFlag()
+      // 	   << " GetBDCCorrelationFlag "       <<  aParticle->GetBDCCorrelationFlag()
+      // 	   << " GetFromTargetFlag "           <<  aParticle->GetFromTargetFlag()
+      // 	   << " GetBeamonTargetFlag  "        <<  aParticle->GetBeamonTargetFlag()
+      // 	   << endl;
+
+
       //-------------------- end of User Analysis --------------------
     }
     flw->Fill();
@@ -244,9 +257,15 @@ void OutputTree(Int_t nmax)
   //-- output
   flw->Branch("irun",&iRun,"irun/I");
   flw->Branch("bevt",bevt,"bevt[7]/I");
-  flw->Branch("aoq",&aoq,"aoq/F");
-  flw->Branch("z",&z,"z/F");
+  flw->Branch("aoq",&aoq,"aoq/D");
+  flw->Branch("z",&z,"z/D");
+  flw->Branch("intZ",&intZ,"intZ/I");
+  flw->Branch("intA",&intA,"intA/I");
   flw->Branch("BDCtc",&BeamonTarget);
+  flw->Branch("bdcax",&bdcax,"bdcax/D");
+  flw->Branch("bdcby",&bdcby,"bdcby/D");
+  flw->Branch("ProjA",&ProjA,"ProjA/D");
+  flw->Branch("ProjB",&ProjB,"ProjB/D");
   flw->Branch("STVertex",&vertexArray);  
   flw->Branch("STParticle",&tpcParticle);
   flw->Branch("ntrack",ntrack,"ntrack[7]/I");
@@ -313,7 +332,8 @@ void BeamPID()
     SnA = 112;
 
   if(SnA == 132){
-    auto gcutFile = new TFile("gcut132Sn.root");
+    //    auto gcutFile = new TFile("gcut132Sn.root");
+    auto gcutFile = new TFile("gcut132Sn_v3.root");
     g132Sn=(TCutG*)gcutFile->Get("g132Sn");
     gcutFile->Close();
   }
@@ -373,13 +393,7 @@ void SetBeamOnTarget(TVector2 vt)
   Double_t Ya = 1.;
   Double_t Yb = 0.;;
 
-  if(SnA == 132){
-    Xa = 0.976;
-    Xb = -15.88;
-    Ya = 1.002;
-    Yb = -225.23;
-  }
-  else if(SnA == 108){
+ if(SnA == 108){
     Xa = 1.002;
     Xb = -20.39;
     Ya = 1.002;
@@ -397,14 +411,30 @@ void SetBeamOnTarget(TVector2 vt)
     Ya = 0.987;
     Yb = -226.07;
   }
+  else if(SnA == 132){
+    Xa = 0.976;
+    Xb = -15.88;
+    Ya = 1.002;
+    Yb = -225.23;
+  }
   
-  
-  BeamonTarget->SetX(vt.X()*Xa + Xb);
-  BeamonTarget->SetY(vt.Y()*Ya + Yb);
+ if(SnA != 132){ 
+   BeamonTarget->SetX(vt.X()*Xa + Xb);
+   BeamonTarget->SetY(vt.Y()*Ya + Yb);
+ }
+ else {
+
+   BeamonTarget->SetX(ProjX);
+   BeamonTarget->SetY(ProjY);
+
+ }
+   
 }
 
-Bool_t CheckBeamPosition(TVector2 txy)
+Bool_t CheckBeamPosition()
 {
+  TVector2 txy = *BeamonTarget;
+
   if((txy.X() >= tx_right &&txy.X() <= tx_left) &&  
      (txy.Y() >= ty_btm  && txy.Y() <= ty_top ))   
     return kTRUE;
@@ -433,11 +463,13 @@ Bool_t CheckBDCvsVertexCorrelation(TVector2 vxy)
 {
 
   Double_t diffx = BeamonTarget->X() - vxy.X();
-  Double_t diffy = BeamonTarget->Y() - vxy.Y();
-  
+  Double_t diffy = BeamonTarget->Y() - vxy.Y() - beamVy_offset;
+
+
   if((abs(diffx) < beamVx_nsig*beamVx_sigma) &&
-     (abs(diffy) < beamVy_nsig*beamVy_sigma))
+     (abs(diffy) < beamVy_nsig*beamVy_sigma)) {
     return kTRUE;
+  }
   else
     return kFALSE;
 }
@@ -445,7 +477,7 @@ Bool_t CheckBDCvsVertexCorrelation(TVector2 vxy)
 Bool_t CheckBDCvsTrackCorrelation(TVector3 trackatTarget)
 {
   Double_t diffx = BeamonTarget->X() - trackatTarget.X();
-  Double_t diffy = BeamonTarget->Y() - trackatTarget.Y();
+  Double_t diffy = BeamonTarget->Y() - trackatTarget.Y() + trackVy_offset;
 
   if(abs(diffx) < trackVx_nsig*trackVx_sigma &&
      abs(diffy) < trackVy_nsig*trackVy_sigma)
@@ -525,19 +557,35 @@ Bool_t SetKyotoMultiplicity()
 void SetBigRIPS()
 {
   //----- BigRIPS data --------------------
-  ribfChain = new TChain("beam");
+  ribfChain = new TChain("TBeam");
     
-  ribfChain ->Add("../bripsData/run"+sRun+".ridf.root");
+  ribfChain ->Add("../bripsData/v3/beam_run"+sRun+".ridf.root");
 
   //----- Set branch addresses.
   ribfChain->SetBranchAddress("aoq",&aoq);
   ribfChain->SetBranchAddress("z",&z);
-  ribfChain->SetBranchAddress("tof",&tof);
   ribfChain->SetBranchAddress("beta",&beta);
-  ribfChain->SetBranchAddress("tx",&tx);
-  ribfChain->SetBranchAddress("ty",&ty);
-  ribfChain->SetBranchAddress("ta",&ta);
-  ribfChain->SetBranchAddress("tb",&tb);
+  ribfChain->SetBranchAddress("brho",&brho);
+  ribfChain->SetBranchAddress("isGood",&isGood);
+  ribfChain->SetBranchAddress("intZ",&intZ);
+  ribfChain->SetBranchAddress("intA",&intA);
+
+  bdcChain = new TChain("TBDC");
+  bdcChain -> Add("../bripsData/v3/beam_run"+sRun+".ridf.root");
+  
+  bdcChain->SetBranchAddress("bdcax",&bdcax);
+  bdcChain->SetBranchAddress("bdcby",&bdcby);
+  bdcChain->SetBranchAddress("ProjA",&ProjA);
+  bdcChain->SetBranchAddress("ProjB",&ProjB);
+  bdcChain->SetBranchAddress("ProjX",&ProjX);
+  bdcChain->SetBranchAddress("ProjY",&ProjY);
+  bdcChain->SetBranchAddress("ProjZ",&ProjZ);
+  bdcChain->SetBranchAddress("ProjP",&ProjP);
+  bdcChain->SetBranchAddress("ProjPX",&ProjPX);
+  bdcChain->SetBranchAddress("ProjPY",&ProjPY);
+  bdcChain->SetBranchAddress("ProjPZ",&ProjPZ);
+
+
 }
 
 void SetTPC()
@@ -562,6 +610,32 @@ void SetTPC()
 
   fChain -> SetBranchAddress("STTrack", &trackArray);
   fChain -> SetBranchAddress("STVertex",&vertexArray);
+
+}
+
+Bool_t DefineVersion()
+{
+  Bool_t bfound = kFALSE;
+
+  TString ver = sVer + ".";
+  
+  for ( Int_t i = 0; i < 2; i++) {
+    if( ver.First(".") < 0 ) break;
+
+    Ssiz_t end = ver.First(".")  ;
+    TString ver1 = ver(0, end);
+
+    ver = ver(end+1, ver.Length());
+
+    iVer[i] = atoi(ver1);
+
+    if(i==1) bfound = kTRUE;
+  }
+  
+  if(!bfound)
+    cout << " missing version number : " << iVer[0] << "." << iVer[1]  << endl;
+
+  return bfound;
 
 }
 
