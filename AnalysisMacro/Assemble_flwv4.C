@@ -19,6 +19,16 @@ void Setup()
 
   iRun = atoi(sRun);
 
+  SnA = 0;
+  if(iRun >= 2174 && iRun <= 2509)
+    SnA = 108;
+  else if( iRun >= 2836 && iRun <= 3039)
+    SnA = 132;
+  else if( iRun >= 3058 && iRun <= 3184)
+    SnA = 124;
+  else if( iRun >= 2520 && iRun <= 2653)
+    SnA = 112;
+
   BigRIPS  = kTRUE;  //kFALSE;
   KyotoArry= kFALSE; //kTRUE;
   KATANA   = kFALSE; //kTRUE;
@@ -297,7 +307,7 @@ Int_t GetBeamPID(){
     if(g132Sn->IsInside(aoq,z) && z < 50.536)
       pid = 132;
   }
-  else if(g108Sn){
+  else if(g108Sn->IsInside(aoq,z)){
     if(g108Sn->IsInside(aoq,z))
       pid = 108;
   }
@@ -308,44 +318,36 @@ Int_t GetBeamPID(){
 void BeamPID()
 {
 
-  SnA = 0;
-  if(iRun >= 2174 && iRun <= 2509)
-    SnA = 108;
-  else if( iRun >= 2836 && iRun <= 3039)
-    SnA = 132;
-  else if( iRun >= 3058 && iRun <= 3184)
-    SnA = 124;
-  else if( iRun >= 2520 && iRun <= 2653)
-    SnA = 112;
-
   if(SnA == 132){
     auto gcutFile = new TFile("gcut132Sn.root");
     g132Sn=(TCutG*)gcutFile->Get("sigma20");
     gcutFile->Close();
   }
 
-  // else if(SnA == 108){
-  //   auto gcutFile = new TFile("gcut108Sn.root");
-  //   g108Sn=(TCutG*)gcutFile->Get("g108Sn");
-  //   gcutFile->Close();
-  // }
+  else if(SnA == 108){
+    auto gcutFile = new TFile("gcut108Sn.root");
+    g108Sn=(TCutG*)gcutFile->Get("sigma20");
+    gcutFile->Close();
+  }
   // else if(SnA == 124){
   //   auto gcutFile = new TFile("gcut124Sn.root");
   //   g124Sn=(TCutG*)gcutFile->Get("g124Sn");
   //   gcutFile->Close();
   // }    
-
 }
-
-
-
 
 
 void SetDataDirectory()
 {
   // upto 9 layer
   //  rootDir = "/cache/scr/spirit/DataAskedByMizuki/Sn132-All-LayerCut90-GC-DS/";
-  rootDir = "/cache/scr/spirit/DataAskedByMizuki/Sn132-All-LayerCut90-GC-DS-GiordanoCommentOut/";
+  if(SnA == 132)
+    rootDir = "/cache/scr/spirit/DataAskedByMizuki/Sn132-All-LayerCut90-GC-DS-GiordanoCommentOut/";
+  else if(SnA == 108)
+    rootDir = "/cache/scr/spirit/DataAskedByMizuki/Sn108-All-LayerCut90-GC-DS-GiordanoCommentOut/";
+  else if(SnA == 124)
+    rootDir = "/cache/scr/spirit/DataAskedByMizuki/Sn124-All-LayerCut90-GC-DS-GiordanoCommentOut/";
+
 }
 
 void SetKATANADirectory()
@@ -523,11 +525,31 @@ Bool_t SetKyotoMultiplicity()
 void SetBigRIPS()
 {
   //----- BigRIPS data --------------------
-  ribfChain = new TChain("TBeam");
-    
-  TString beamfile = "/cache/scr/spirit/DataAskedByMizuki/beam.Sn132_all/";
 
-  ribfChain ->Add(beamfile+"beam_run"+sRun+".ridf.root");
+  TString beamDir;
+  if(SnA == 132) 
+    beamDir  = "/cache/scr/spirit/DataAskedByMizuki/beam.Sn132_all/";
+  
+  else if(SnA == 108) 
+    beamDir  = "/cache/scr/spirit/DataAskedByMizuki/beam.Sn108/";
+
+  auto beamFile = "beam_run"+sRun+".ridf.root";
+
+
+  if( gSystem->FindFile(beamDir, beamFile)) 
+    std::cout << " BigRIPS data : " << beamFile << " is opened." << std::endl;
+  
+  else {
+    std::cout << "ERROR:  RIDF data was not found. " << std::endl;
+    exit(0);
+  }
+
+
+  ribfChain = new TChain("TBeam");
+  bdcChain = new TChain("TBDC");
+
+      
+  ribfChain ->Add(beamFile);
 
   //----- Set branch addresses.
   ribfChain->SetBranchAddress("aoq",&aoq);
@@ -538,9 +560,7 @@ void SetBigRIPS()
   ribfChain->SetBranchAddress("intZ",&intZ);
   ribfChain->SetBranchAddress("intA",&intA);
 
-  bdcChain = new TChain("TBDC");
-  bdcChain -> Add(beamfile+"beam_run"+sRun+".ridf.root");
-  
+  bdcChain -> Add(beamFile);  
   bdcChain->SetBranchAddress("bdcax",&bdcax);
   bdcChain->SetBranchAddress("bdcby",&bdcby);
   bdcChain->SetBranchAddress("ProjA",&ProjA);

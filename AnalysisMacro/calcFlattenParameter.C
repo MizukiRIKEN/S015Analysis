@@ -212,15 +212,12 @@ void flatten_iphi_mtrkthetabin()
     }
     
 
-
     Int_t nevt = rChain[m]->GetEntries();
     cout << " Number of events " << nevt << endl;
-
 
     Int_t icout = 0;
 
     //    cout << " at " << thetabin[thetanbin-1] << " " << thetabin[thetanbin] << endl;
-
     
     for(UInt_t i = 0; i < nevt; i++){
       rChain[m]->GetEntry(i);
@@ -318,7 +315,7 @@ void flatten_iphi_mtrkthetabin()
     
     UInt_t iv = 1;
     cc[im]->cd(iv); iv++;
-    if(hbthetaiphi[m]) hbthetaiphi[m]->Draw("colz");
+    if(hbthetaiphi[m])  hbthetaiphi[m]->Draw("colz");
     
     cc[im]->cd(iv); iv++;
     if(hbmtrkiphi[m])   hbmtrkiphi[m]->Draw("colz");
@@ -333,8 +330,7 @@ void flatten_iphi_mtrkthetabin()
     if(haiphi[m])       haiphi[m]->Draw();
     
     cc[im]->cd(1);
-
-    
+   
     im++;
 
 

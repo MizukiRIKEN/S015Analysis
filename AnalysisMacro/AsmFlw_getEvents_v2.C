@@ -28,7 +28,7 @@ void AsmFlw_getEvents_v2(Long64_t nmax = -1)
       nTrack = (Long64_t)GetRandomNumTrack(); // get number of track 
     else {
       fTree->GetEntry(ievt);
-      if( snbm != 132 ) continue;
+      if( snbm != 132 && snbm != 108) continue;
 
       nTrack = aParticleArray->GetEntries();
     }
@@ -69,7 +69,6 @@ void AsmFlw_getEvents_v2(Long64_t nmax = -1)
 	  else 
 	    event.push_back(ievt);
 	  
-
 	  aPart1->SetMixedNtrack(ntrk);
 
 	  trackID.push_back(numGoodTrack);
@@ -491,7 +490,7 @@ STParticle *GetMixedTrack(Long64_t *ival, Int_t *kval)
 	if(kLoop > 1) cout << " Too much loops " << kLoop << " kval " << *kval << " mevt " << mevt << " / " << nEntry <<  endl;
       }
 
-      if( snbm != 132 ) continue;
+      if( snbm != 132 && snbm != 108) continue;
 
 
 

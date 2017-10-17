@@ -54,7 +54,7 @@ void OpenChain(UInt_t m)
     //    tVer.Replace(0,(Int_t)(idx+1),"");
   }
 
-  fVer = atoi(ssVer);
+  auto fVer = atoi(ssVer);
 
   cout << "fVer " << fVer << " ssVer " << ssVer << " tVer " << tVer << endl;
 

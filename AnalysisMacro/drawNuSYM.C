@@ -39,9 +39,6 @@
   //  pgv_v1->Draw("ALP");
   //  dgv_v1->Draw("ALP");
 
-
-
-
   auto cc1 = new TCanvas("cc1","cc1",700,500);
   pgv_v2->SetLineColor(4);
   pgv_v2->SetMarkerStyle(20);

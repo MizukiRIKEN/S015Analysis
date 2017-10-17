@@ -80,7 +80,7 @@ void OpenChain()
       std::cout << fname << " was added " << std::endl;
     }
     else
-      std::cout << " File is not found " << fname << std::endl;
+      std::cout << " File is not found ->" << fname << std::endl;
 
   }
 
