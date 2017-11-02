@@ -103,7 +103,7 @@ UInt_t   mtrack_2;
 Double_t bsPhi[2];
 Double_t bsPhi_1[2];
 Double_t bsPhi_2[2];
-Double_t bsPhi_ex[2];
+Double_t bsPhi_ex[3];
 
 Double_t         aX;
 Double_t         bY;

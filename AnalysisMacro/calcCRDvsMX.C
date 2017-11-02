@@ -49,6 +49,7 @@ UInt_t m_bgn = 0;
 UInt_t m_end = 2;
 
 TMultiGraph *mg;
+TMultiGraph *mgr;
 
 void plotv1v2(UInt_t selid=2);
 void PtDependece(UInt_t hrm=1);
@@ -998,6 +999,9 @@ void YDependece(UInt_t hrm=1)
       }
     }
 
+    Double_t yratio [2][rp_nbin];
+    Double_t yratioe[2][rp_nbin];
+
     // reversed
     for(UInt_t jn = 0; jn < rp_nbin; jn++) {
       xval [3][jn] = -xval[0][jn];
@@ -1005,6 +1009,25 @@ void YDependece(UInt_t hrm=1)
 
       yval [3][jn] =  yval[0][jn] * pow(-1, hrm);
       yvale[3][jn] = yvale[0][jn];
+
+      if(yval[0][jn] != 0){
+	yratio [0][jn] = abs(yval[1][jn] / yval[0][jn]);
+	yratioe[0][jn] = pow(yvale[1][jn],2)/pow(yval[1][jn],2) + pow(yvale[0][jn],2)/pow(yval[0][jn],2) ;
+	yratioe[0][jn] = abs(yratio [0][jn]) * sqrt(yratioe[0][jn]);
+
+	// cout << " yratio 0 " << jn << " " << setw(10)
+	//      << yval[1][jn] << " / " << yval[0][jn] << " = " << yratio [0][jn]
+	//      << " +- " << yratioe[0][jn] << " " << xval[0][jn] <<endl;
+      }
+
+      if(yval[0][jn] != 0){
+	yratio [1][jn] = abs(yval[2][jn] / yval[0][jn]);
+	yratioe[1][jn] = pow(yvale[2][jn],2)/pow(yval[2][jn],2) + pow(yvale[0][jn],2)/pow(yval[0][jn],2) ;
+	yratioe[1][jn] = abs(yratio [1][jn]) * sqrt(yratioe[1][jn]);
+
+	// cout << xval[0][jn] << " " <<  xval[2][jn] << endl; 
+	// cout << " yratio 1 " << jn << " : " << yratio[1][jn] << " +- " << yratioe[1][jn] << endl;
+      }
     }
     
 
@@ -1065,9 +1088,38 @@ void YDependece(UInt_t hrm=1)
 
     DrawCenterLine();
 
+    iisl = 2;
+    auto gt0 = new TGraphErrors(nsl, &xval[0][iisl], &yratio[0][iisl], &xvale[0][iisl], &yratioe[0][iisl]);
+    gt0->SetName("gt0");
+    gt0->SetLineColor(4);
+    gt0->SetMarkerStyle(21);
+    gt0->SetMarkerColor(4);
+
+    auto gt1 = new TGraphErrors(nsl, &xval[0][iisl], &yratio[1][iisl], &xvale[0][iisl], &yratioe[1][iisl]);
+    gt1->SetName("gt0");
+    gt1->SetLineColor(8);
+    gt1->SetMarkerStyle(22);
+    gt1->SetMarkerColor(8);
+
+    mgr = new TMultiGraph();
+    aTitle = Form("; Ycm/Ycm_beam; v%d /v%d(proton)",hrm, hrm);
+    mgr->SetTitle(aTitle);
+    mgr->SetName("mgr");
+    mgr->Add(gt0,"lp");
+    mgr->Add(gt1,"lp");
+
+    auto aLegr = new TLegend(0.1,0.7,0.35,0.9,"");
+    aLegr->AddEntry(gt0,partname[selid[1]],"lp");
+    aLegr->AddEntry(gt1,partname[selid[2]],"lp");
+
+
     ic++;
+    cc[ic] = new TCanvas(Form("cc%d",ic),Form("cc%d",ic),700,500);
+    mgr->Draw("a");
+    aLegr->Draw();
+
+
   }
 }
-
 
 
