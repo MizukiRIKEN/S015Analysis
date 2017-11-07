@@ -333,7 +333,6 @@ Long64_t GetMultiplicityDistribution()
 
 void ResetPID(STParticle *apart)
 {
-  //apart->SetPID(apart->GetLinearPID());
 
   auto p    = apart->GetP();
   auto dedx = apart->GetdEdx();

@@ -136,7 +136,7 @@ public:
   void     SetFlattenBinID(UInt_t value1, UInt_t value2) 
   {fcorrBin[0]=value1; fcorrBin[1] = value2;}
 
-  Int_t   GetFlattenBinID(UInt_t value)       {if(value<2) return fcorrBin[value]; else return -1;}
+  Int_t    GetFlattenBinID(UInt_t value)       {if(value<2) return fcorrBin[value]; else return -1;}
 
 
   void     SetReactionPlaneFlag(Int_t value)    {fReactionPlanef = value;}

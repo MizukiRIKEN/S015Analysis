@@ -239,6 +239,8 @@ void Initialize()
     bsPhi[i]   = -999.;
     bsPhi_1[i] = -999.;
     bsPhi_2[i] = -999.;
+  }
+  for(UInt_t i = 0; i < 3; i++){
     bsPhi_ex[i]= -999.;
   }
   
@@ -320,7 +322,7 @@ void OutputTree()
   mflw->Branch("bsPhi"     ,bsPhi   ,"bsPhi[2]/D");
   mflw->Branch("bsPhi_1"   ,bsPhi_1 ,"bsPhi_1[2]/D");
   mflw->Branch("bsPhi_2"   ,bsPhi_2 ,"bsPhi_2[2]/D");
-  mflw->Branch("bsPhi_ex"  ,bsPhi_ex,"bsPhi_ex[2]/D");
+  mflw->Branch("bsPhi_ex"  ,bsPhi_ex,"bsPhi_ex[3]/D");
 
 }
 
@@ -551,7 +553,6 @@ void SubEventAnalysis()
       TVector2 pt = aPart1->GetCorrectedPt();
       TVector2 ptr= aPart1->GetRotatedPt();
 
-	//      Int_t isel = rnd.Integer(2);
       
       if( (UInt_t)(arr[isel]*np)%2 ==0 && mtrack_1 < ntrack[4]/2 ) {
 	unitP_1 += wt * pt.Unit();
@@ -561,7 +562,6 @@ void SubEventAnalysis()
 
 	aPart1->AddReactionPlaneFlag(200);
 	mtrack_1++;
-	//	cout << " _1 " << mtrack_1 << " / " << itra <<  endl;
       }
       else if( mtrack_2 < ntrack[4]/2 ) {
 	unitP_2 += wt * pt.Unit();
@@ -589,36 +589,15 @@ void SubEventAnalysis()
     }
   }
 
-  // tempo
-  // cout << "--------------------" << endl;
-
-  // cout << "1 " << unitP_1.Phi() << endl;
-  // for(UInt_t m = 0; m < (UInt_t)elem1.size(); m++)
-  //   cout << m << " : (" << setw(15) <<  elem1.at(m).X() << ", " << elem1.at(m).Y() << ") " << endl;
-
-  // for(UInt_t m = 0; m < (UInt_t)elem1.size(); m++)
-  //   cout  <<  elem1.at(m).Phi() << ", ";
-
-  // cout << endl;
-
-  // cout << "2 " << unitP_2.Phi() << endl;
-  // for(UInt_t m = 0; m < (UInt_t)elem2.size(); m++)
-  //   cout << m << " : (" << setw(15) <<  elem2.at(m).X() << ", " << elem2.at(m).Y() << ") " << endl;
-
-  // for(UInt_t m = 0; m < (UInt_t)elem2.size(); m++)
-  //   cout  <<  elem2.at(m).Phi() << ", ";
-
-  // cout << endl;
 
   UInt_t nboot = 500;
   auto btsp1 = new STBootStrap(nboot, &elem1); 
-  bsPhi_1[0] = btsp1->GetMean();
-  bsPhi_1[1] = btsp1->GetStdDev()/sqrt(btsp1->GetNElem());
+  bsPhi_1[0] = btsp1->GetMean(2);
+  bsPhi_1[1] = btsp1->GetStdDev(2);
 
   auto btsp2 = new STBootStrap(nboot, &elem2); 
-  bsPhi_2[0] = btsp2->GetMean();
-  bsPhi_2[1] = btsp2->GetStdDev()/sqrt(btsp2->GetNElem());
-
+  bsPhi_2[0] = btsp2->GetMean(2);
+  bsPhi_2[1] = btsp2->GetStdDev(2);
   
 }
 
@@ -632,8 +611,13 @@ void AzmAngleRPTReactionPlane()
 
 
   //  cout << " track " << mtrack << " / " << aParticleArray->GetEntries() <<  endl;
+
+  UInt_t icount = 0;
   while( (aPart1 = (STParticle*)next()) ) {
-    
+
+    if(icount == 1) break;
+    icount++;
+
     if(aPart1->GetReactionPlaneFlag()>0){
       Double_t wt = aPart1->GetRPWeight();
       TVector2 pt = aPart1->GetCorrectedPt();
@@ -658,17 +642,24 @@ void AzmAngleRPTReactionPlane()
 	  mExcRP += wt_rp * pt_rp.Unit();
 	  exVec.push_back( wt_rp * pt_rp.Unit() );
 
+
 	  itraex++;
 	}
       }
 
-      auto btsp = new STBootStrap(500, &exVec);
-      bsPhi_ex[0] = btsp->GetMean();
-      bsPhi_ex[1] = btsp->GetStdDev()/sqrt(btsp->GetNElem());
+      auto btsp  = new STBootStrap(500, &exVec);
+      
+      bsPhi_ex[0] = btsp->GetMean(2);
+      bsPhi_ex[1] = btsp->GetStdDev(2);
+      bsPhi_ex[2] = btsp->GetPhiOriginal();
+      
 
-      aPart1->SetAzmAngle_wrt_RP( (Double_t)TVector2::Phi_mpi_pi( pt.Phi()-mExcRP.Phi()));
+      aPart1->SetAzmAngle_wrt_RP  ( (Double_t)TVector2::Phi_mpi_pi( pt.Phi() - bsPhi_ex[0]));
+      aPart1->SetIndividualRPAngle( (Double_t)TVector2::Phi_mpi_pi( bsPhi_ex[0] ));
+
+      //      aPart1->SetAzmAngle_wrt_RP( (Double_t)TVector2::Phi_mpi_pi( pt.Phi()-mExcRP.Phi()));
       //aPart1->SetIndividualRPAngle( (Double_t)TVector2::Phi_mpi_pi( -2.));
-      aPart1->SetIndividualRPAngle( (Double_t)TVector2::Phi_mpi_pi( mExcRP.Phi() ));
+      //      aPart1->SetIndividualRPAngle( (Double_t)TVector2::Phi_mpi_pi( mExcRP.Phi() ));
       //      cout << " rest part " << itraex << " : " << itra << " @ "<< mExcRP.Phi() << " = " << aPart1->GetIndividualRPAngle()
       //      	   <<endl;          
     }
