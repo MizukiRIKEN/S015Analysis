@@ -33,4 +33,5 @@ export DB132="_rdflw_v4.0.1_crdb2843v4.0.1_cv1"
 
 export DB108="_rdflw_v4.0.1_crdb2261v4.0.1_cv2"
 
+echo 'RUN0={$FULL108} DB0=$DB108 RUN1={$FULL132} DB1=$DB132 root drawRComp.C'
 

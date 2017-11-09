@@ -130,7 +130,7 @@ void Assemble_flwv4(Int_t nevt = -1)
     // --------------- RIDF --------------
     if(BigRIPS) {
       ribfChain->GetEntry(i);
-      bdcChain->GetEntry(i);
+      bdcChain ->GetEntry(i);
     }
 
     // --------------- TPC ---------------

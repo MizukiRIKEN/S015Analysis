@@ -1,6 +1,7 @@
 {
-  gROOT->Macro("openASM.C");
-  auto rChain = (TChain*)gROOT->FindObject("rChain");
+  //  gROOT->Macro("openASM.C");
+  gROOT->Macro("openRComp.C");
+  auto rChain = (TChain*)gROOT->FindObject("rChain0");
  
   gStyle -> SetOptStat(0);
   gStyle -> SetPadBottomMargin(0.10);
@@ -22,24 +23,48 @@
 
   TCut MizukiCut = "fgoodtrackf";
 
-  TCut ccCut     = MizukiCut;
+  TCut ccCut     = MizukiCut; //&&"ftheta<0.8";
   
   auto histPID = new TH2D("histPID", ";p/Z (MeV/c); dE/dx (ADC/mm)", 500, -500, 2500, 800, 0, 800);
-  auto histAcc = new TH2D("histAcc", "; #Theta ; #phi"             , 100,   0.,  1.6, 100, -3.2, 3.2);
+  //  rChain -> Draw("fdEdx:fP/fChar>>histPID", GenieCut,"colz");
+  rChain -> Project("histPID","fdEdx:fP/fChar",ccCut);  //> ver 4.0 
+  cout << histPID->GetEntries() << endl;
 
+  auto histPIDc = new TH2D("histPIDc", ";p/Z (MeV/c); dE/dx (ADC/mm)", 500, -500, 2500, 800, 0, 800);
+  rChain -> Project("histPIDc","fdEdx:fP/fChar",ccCut&&"ftheta<0.8");  //> ver 4.0 
+  cout << histPIDc->GetEntries() << endl;
 
 
   
+
+  auto gcutFile1 = new TFile("gcutPID132Sn.root");
+  auto gProton   = (TCutG*)gcutFile1->Get("gcutProton132Sn2");
+  auto gDeuteron = (TCutG*)gcutFile1->Get("gcutDeutron132Sn");
+  auto gTriton   = (TCutG*)gcutFile1->Get("gcutTriton132Sn");
+  auto gPip      = (TCutG*)gcutFile1->Get("gcutPip132Sn");
+  auto gPim      = (TCutG*)gcutFile1->Get("gcutPim132Sn");
+  gcutFile1->Close();
+
+
+
   auto cc0 = new TCanvas("cc0","cc0 " ,700,500);
-  //  rChain -> Draw("fdEdx:fP/fChar>>histPID", GenieCut,"colz");
-  rChain -> Draw("fdEdx:fP/fChar>>histPID",ccCut,"colz");  //> ver 4.0 
-  //  histPID -> Draw("colz");
-  histPID->GetEntries();
+  histPID->Draw("colz");
+  gProton->Draw("same");
+  gDeuteron->Draw("same");
+  gTriton->Draw("same");
+  gPip->Draw("same");
+  gPim->Draw("same");
+  cc0->SetLogz();
 
 
   auto cc1 = new TCanvas("cc1","cc1 " ,700,500);
-  rChain -> Draw("frphi:fRotatedP3.Theta()>>histAcc", ccCut,"colz");
-  //  histAcc -> Draw("colz");
+  histPIDc->Draw("colz");
+  gProton->Draw("same");
+  gDeuteron->Draw("same");
+  gTriton->Draw("same");
+  gPip->Draw("same");
+  gPim->Draw("same");
+  cc1->SetLogz();
 
 }
  
