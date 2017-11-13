@@ -144,7 +144,9 @@ void STParticle::SetRecoTrack(STRecoTrack *atrack)
 {
   fRTrack = atrack;
 
-  forigP3 = fRTrack->GetMomentum();
+  forigP3 = fRTrack->GetMomentumTargetPlane();
+
+  //  forigP3 = fRTrack->GetMomentum();  // modified on 9 Nov. 2017
   //Because of PZ bug for v1.04
   if(forigP3.Z() < 0)
     forigP3 = -forigP3;
