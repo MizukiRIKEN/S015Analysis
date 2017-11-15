@@ -116,7 +116,7 @@ Bool_t CheckPID(STParticle *apart)
 {
   if( apart == NULL ) return kFALSE;
 
-  if( !apart->GetBestTrackFlag() ) return kFALSE;
+  //  if( !apart->GetBestTrackFlag() ) return kFALSE;
 
   ResetPID(apart);
 
