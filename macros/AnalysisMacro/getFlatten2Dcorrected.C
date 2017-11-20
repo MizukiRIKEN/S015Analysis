@@ -66,20 +66,19 @@ void getFlatten2Dcorrected(Long64_t nmax = -1)
 
 	FlatteningCorrection(aPart1,mtkBIN);
 	  
-	if( aPart1->GetReactionPlaneFlag() >=  10 ){
+	if( aPart1->GetReactionPlaneFlag() >=  10 ){  // reject pi+-
 	    
-	  if( aPart1->GetRotatedMomentum().Mag() > 2500 ) {
+	  if( aPart1->GetRotatedMomentum().Mag() > 2500 || aPart1->GetMomentum().Mag() == 0) { // reject strange momentum
 	    aPart1->SetReactionPlaneFlag(0);
 	    continue;
 	  }
-
 
 	  mtrack++;
 	
 	  unitP += aPart1->GetFlattenMomentum().Unit();
 
 	  //	  if(aPart1->GetFlattenMomentum().Theta() >= 0.2 && aPart1->GetFlattenMomentum().Theta() < 0.8) {
-	  if(aPart1->GetFlattenMomentum().Theta() < 0.6) {
+	  // if(aPart1->GetFlattenMomentum().Theta() < 0.6) {
 	    ntrack[4]++;
 	    aPart1->AddReactionPlaneFlag(100);
 	    
@@ -87,7 +86,7 @@ void getFlatten2Dcorrected(Long64_t nmax = -1)
 	    unitP_lang += aPart1->GetRPWeight() * (aPart1->GetFlattenPt()).Unit();
 
 	    unitP_rot  += aPart1->GetRPWeight() * (aPart1->GetRotatedPt()).Unit();
-	  }
+	    //  }
 	}
       }
 
@@ -360,37 +359,36 @@ UInt_t SetDatabaseFiles()
   if(sbRun != "0") {
     TString fname = "cfrun"+sbRun;
     if(bMix)
-      //  fname += sbRun+"_mxflw_v2.0.14.";
       fname += "_mxflw_v";
     else
-      // fname += sbRun+"_rdflw_v2.0.14.";
       fname += "_rdflw_v";
     fname += sbVer + ".";
 
-    //    cout << " fname " << fname << "+" << sBinp << endl;
+        cout << " fname " << fname << "+" << sBinp << endl;
 
     UInt_t ihmsum = 0;
     UInt_t imtk = 0;
     while(1){
 
       UInt_t ihm = 0;
+      UInt_t ihmm = 0;
       while(1){
 
-	TString ffname = fname +  Form("m%dn%d"+sBinp+".txt",imtk,ihm);
-	//	cout << ffname << endl;
-
+	TString ffname = fname +  Form("m%dn%d"+sBinp+".txt",imtk,ihmm);
+		cout << ffname << endl;
 	
 	if( gSystem->FindFile("db",ffname) ){
 	  vfname.push_back(ffname);
-	  ihm++;
+	  ihm++;  ihmm++;
 	}
 	else 
 	  break;
       }
+
       if(ihm > 0 ) {
 	mtkbin.push_back(ihm);
 	ihmsum += ihm;
-	cout << " ihm " << ihm  << " <- " << imtk << " sum " << ihmsum << endl;
+	///	cout << " ihm " << ihm  << " <- " << imtk << " sum " << ihmsum << endl;
       }
       else if(ihm == 0)
 	break;
@@ -427,8 +425,6 @@ UInt_t SetDatabaseFiles()
   }
 
   binpara   = flowcorr->GetBinParameter(1);
-
-  
 
   return nBin;    
 }
@@ -475,12 +471,9 @@ Int_t GetThetaCorrectionIndex(Double_t fval, Int_t ival)
 
   for(itr; itr != pbinmin.begin()-1; itr--){
     
-
-    if( fval >= itr->second) {
-      
+    if( fval >= itr->second) {      
       return itr - pbinmin.begin();
     }
-
   }
 
   return -1;
@@ -633,7 +626,7 @@ void AzmAngleRPTReactionPlane()
       UInt_t itraex = 0;
       while( (restPart = (STParticle*)rest()) ) {
 
-	if( aPart1 != restPart && restPart->GetReactionPlaneFlag()>=110 ) {
+	if( aPart1 != restPart && restPart->GetReactionPlaneFlag() >= 110 ) {
 
 	  Double_t wt_rp = restPart->GetRPWeight();
 	  TVector2 pt_rp = restPart->GetCorrectedPt();

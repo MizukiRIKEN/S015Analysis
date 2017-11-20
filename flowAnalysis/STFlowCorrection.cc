@@ -68,23 +68,23 @@ void STFlowCorrection::SetFileName()
 void STFlowCorrection::SetFileName(TString sval)
 {
   fname = sval;
-  cout << fname << " in defined. " << endl;
+  std::cout << fname << " in defined. " << std::endl;
 }
 
 UInt_t STFlowCorrection::GetCorrectionFactor(UInt_t val)
 {
 
-  cout << "STFlowCorrection::GetCorrectionFactor : "<< endl;
+  std::cout << "STFlowCorrection::GetCorrectionFactor : "<< std::endl;
 
   TString header;
   if(irm  == 1) header = "1->,";
   else          header = "0->,";
 
 
-  fstream fin;
-  fin.open(fname, fstream::in);
+  std::fstream fin;
+  fin.open(fname, std::fstream::in);
   if(fin == NULL) {
-    std::cout << "A file " << fname << " was not found " << endl;
+    std::cout << "A file " << fname << " was not found " << std::endl;
     exit(0);
   }
 
@@ -95,7 +95,6 @@ UInt_t STFlowCorrection::GetCorrectionFactor(UInt_t val)
   harm = atoi(sget);
   charm = harm;
 
-  cout << "harm " << harm << " charm " << charm << endl;
   Init();
 
   Int_t j = 0;
@@ -132,23 +131,18 @@ UInt_t STFlowCorrection::GetCorrectionFactor(UInt_t val)
     
     else if(sget == header){
       fin >> sget;
-      //      cout << j << " ->  indx[j] " << sget << endl;
       indx[j] = atoi(sget);
 
       fin >> sget;
-      //      cout << " Bn[j] " << sget << endl;
       Bn[j] = atof(sget);
 
       fin >> sget;
-      //      cout << " Bn_rms[j] " << sget << endl;
       Bn_rms[j] = atof(sget);
 
       fin >> sget;
-      //      cout << " An[j] " << sget << endl;
       An[j] = atof(sget);
 
       fin >> sget;
-      //      cout << " An_rms[j] " << sget << endl;
       An_rms[j] = atof(sget);
 
       j++;
@@ -167,17 +161,17 @@ void STFlowCorrection::ShowParameters()
     std::cout << binpara[1] << " > " << binmin[1] << " && < " << binmax[1] << std::endl; 
 
   for(UInt_t k = 0; k < charm; k++){ 
-    cout << "->, " << setw(5) << indx[k] << ", "
-   	 << scientific << setprecision(5) << right
-   	 << setw(20) << Bn[k] << ", " << Bn_rms[k] << ", "
-   	 << setw(20) << An[k] << ", " << An_rms[k]
-   	 << endl;
+    std::cout << "->, " << std::setw(5) << indx[k] << ", "
+	      << std::scientific << std::setprecision(5) << std::right
+	      << std::setw(20) << Bn[k] << ", " << Bn_rms[k] << ", "
+	      << std::setw(20) << An[k] << ", " << An_rms[k]
+	      << std::endl;
   }
    
   std::cout << fname << " was loaded." << std::endl;
 }
 
-void STFlowCorrection::GetCorrection(vector<Double_t> &val)
+void STFlowCorrection::GetCorrection(std::vector<Double_t> &val)
 {
 
   for(Int_t i = 0; i < (Int_t)val.size(); i++)
@@ -202,9 +196,9 @@ Double_t STFlowCorrection::GetCorrection(Double_t val)
   
 }
 
-Double_t  *STFlowCorrection::GetAverageCosin(Int_t ival, vector<Double_t> &val)
+Double_t  *STFlowCorrection::GetAverageCosin(Int_t ival, std::vector<Double_t> &val)
 {
-  vector<Double_t> fvCos;
+  std::vector<Double_t> fvCos;
 
   fvCos.clear();
 
@@ -212,8 +206,8 @@ Double_t  *STFlowCorrection::GetAverageCosin(Int_t ival, vector<Double_t> &val)
   for(Int_t i = 0; i < (Int_t)val.size(); i++)
     fvCos.push_back(cos(findx * val.at(i)));
   
-  vector<Double_t>::iterator ibgn = fvCos.begin();
-  vector<Double_t>::iterator iend = fvCos.end();
+  std::vector<Double_t>::iterator ibgn = fvCos.begin();
+  std::vector<Double_t>::iterator iend = fvCos.end();
 
   Double_t *vcos;
   vcos = new Double_t[2];
@@ -232,13 +226,13 @@ UInt_t STFlowCorrection::FourierCorrection()
   return (UInt_t)bphi.size();
 }
 
-void STFlowCorrection::FourierCorrection(vector<Double_t> &val)
+void STFlowCorrection::FourierCorrection(std::vector<Double_t> &val)
 {
   bphi = val;
 
-  std::cout << " harm = " << charm <<  "val.size " << val.size() << endl;
-  vector<Double_t> fvCos;
-  vector<Double_t> fvSin;
+  std::cout << " harm = " << charm <<  "val.size " << val.size() << std::endl;
+  std::vector<Double_t> fvCos;
+  std::vector<Double_t> fvSin;
 
   for(UInt_t ihm = 0; ihm < charm; ihm++){ 
 
@@ -255,8 +249,8 @@ void STFlowCorrection::FourierCorrection(vector<Double_t> &val)
     }
 
     if( fvCos.size() > 0 ) {
-      vector<Double_t>::iterator ibgn = fvCos.begin();
-      vector<Double_t>::iterator iend = fvCos.end();
+      std::vector<Double_t>::iterator ibgn = fvCos.begin();
+      std::vector<Double_t>::iterator iend = fvCos.end();
 
       Bn[ihm]     =  2./findx * TMath::Mean(ibgn, iend); 
       Bn_rms[ihm] =  2./findx * TMath::RMS(ibgn, iend); 
@@ -279,12 +273,12 @@ void STFlowCorrection::FourierCorrection(vector<Double_t> &val)
   for(UInt_t k = 0; k < charm; k++){
     Double_t findx = (Double_t)(k+1);
     
-    std::cout << setw(5) << noshowpos << k+1 
-	      << scientific << setprecision(5)  << right //<< showpos
-	      << setw(6) << " Bn<cos> : " <<  setw(15) << Bn[k]  << " rms " << Bn_rms[k]
+    std::cout << std::setw(5) << std::noshowpos << k+1 
+	      << std::scientific << std::setprecision(5)  << std::right //<< showpos
+	      << std::setw(6) << " Bn<cos> : " <<  std::setw(15) << Bn[k]  << " rms " << Bn_rms[k]
 	      << "    " 
-	      << setw(6) << " An<sin> : " <<  setw(15) << An[k]  << " rms " << An_rms[k]
-	      << endl;
+	      << std::setw(6) << " An<sin> : " <<  std::setw(15) << An[k]  << " rms " << An_rms[k]
+	      << std::endl;
     
   }
   
@@ -296,26 +290,22 @@ void STFlowCorrection::FourierCorrection(vector<Double_t> &val)
 void STFlowCorrection::SetDirectory()
 {
   gSystem->cd("db");
-  cout << " setdirectory " << endl;  
-  
 }
 
 UInt_t STFlowCorrection::SaveCorrectionFactor(TString comm)
 {
   SetDirectory();
   
-  fstream fout;
+  std::fstream fout;
 
   Ssiz_t ifnd = comm.First(":");
   fname += comm(0,ifnd);
   fname += ".txt";
 
-  cout << "fname " << fname << endl;
+  fout.open(fname,std::fstream::out);
+  fout << charm << std::endl;
 
-  fout.open(fname,fstream::out);
-  fout << charm << endl;
-
-  fout << "comment : " << comm << endl;
+  fout << "comment : " << comm << std::endl;
 
   TChainElement *ele = 0;
   UInt_t ith = 0;
@@ -323,22 +313,22 @@ UInt_t STFlowCorrection::SaveCorrectionFactor(TString comm)
 
   while(( ele = (TChainElement*)nnext() )){
     TFile f(ele->GetTitle());
-    fout << ith << " : " << f.GetName() << endl;
+    fout << ith << " : " << f.GetName() << std::endl;
     ith++;
   }
 
-  fout << "nth  "  << "Bn<cos>        " << "rms        " <<"An<sin>        " << "rms" << endl;
+  fout << "nth  "  << "Bn<cos>        " << "rms        " <<"An<sin>        " << "rms" << std::endl;
 
   for(UInt_t k = 0; k < charm; k++){
-    fout << irm <<"->, " << setw(5) << k+1 << ", "
-   	 << scientific << setprecision(5) << right
-   	 << setw(20) << Bn[k] << ", " << Bn_rms[k] << ", "
-   	 << setw(20) << An[k] << ", " << An_rms[k]
-   	 << endl;
+    fout << irm <<"->, " << std::setw(5) << k+1 << ", "
+   	 << std::scientific << std::setprecision(5) << std::right
+   	 << std::setw(20) << Bn[k] << ", " << Bn_rms[k] << ", "
+   	 << std::setw(20) << An[k] << ", " << An_rms[k]
+   	 << std::endl;
   }  
 
   fout.close();
-  std::cout << fname << " is created."<< endl;
+  std::cout << fname << " is created."<< std::endl;
 
 
   gSystem->cd("..");
@@ -351,7 +341,7 @@ void STFlowCorrection::PrintContents()
   PrintRange();
 
   for(UInt_t i = 0; i < (UInt_t)vphi.size(); i++){
-    std::cout << " mtrack " << setw(5) << vmtrack.at(i) << " theta " << setw(8) << vtheta.at(i) 
+    std::cout << " mtrack " << std::setw(5) << vmtrack.at(i) << " theta " << std::setw(8) << vtheta.at(i) 
    	      << " phi " << vphi.at(i) << std::endl;
   } 
 }

@@ -34,6 +34,4 @@
 #pragma link C++ class std::vector<Float_t>+;
 #pragma link C++ class std::vector<STSlimPad>+;
 
-
-#pragma link C++ class STParticle+;
 #endif

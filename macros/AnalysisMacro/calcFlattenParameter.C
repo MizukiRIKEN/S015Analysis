@@ -146,8 +146,8 @@ void flatten_iphi_mtrkthetabin()
     hbthetaiphi[m]= new TH2D(Form("hbthetaiphi%d",m), " before ; theta; #phi;  "           , 200,0.,1.6, 400,-3.2,3.2); 
     hathetaiphi[m]= new TH2D(Form("hathetaiphi%d",m), " after  ; theta; #phi;  "           , 200,0.,1.6, 400,-3.2,3.2); 
 
-    hbmtrkiphi[m] = new TH2D(Form("hbmtrkiphi%d",m)," before ; Number of tracks; #phi"     , 30,0,30,400,-3.2,3.2);
-    hamtrkiphi[m] = new TH2D(Form("hamtrkiphi%d",m)," after  ; Number of tracks; #phi"     , 30,0,30,400,-3.2,3.2);
+    hbmtrkiphi[m] = new TH2D(Form("hbmtrkiphi%d",m)," before ; Number of tracks; #phi"     , 100,0,100,400,-3.2,3.2);
+    hamtrkiphi[m] = new TH2D(Form("hamtrkiphi%d",m)," after  ; Number of tracks; #phi"     , 100,0,100,400,-3.2,3.2);
 
     aParticleArray = new TClonesArray("STParticle",100);
 
@@ -209,48 +209,50 @@ void flatten_iphi_mtrkthetabin()
       
       while( (aPart1 = (STParticle*)next()) ){
 
-	//	if(aPart1->GetReactionPlaneFlag() >= 11 && aPart1->GetReactionPlaneFlag() <= 13){
+	// if(aPart1->GetReactionPlaneFlag() >= 11 && aPart1->GetReactionPlaneFlag() <= 13){
 	// if(aPart1->GetReactionPlaneFlag() >= 10 && aPart1->GetRotatedMomentum().Mag()<2500){
+	if(aPart1->GetRotatedMomentum().Mag() > 0){
+
 	  
-	Double_t phi   = aPart1->GetRotatedMomentum().Phi();
-	Double_t theta = aPart1->GetRotatedMomentum().Theta();
-	Double_t P     = aPart1->GetRotatedMomentum().Mag();
+	  Double_t phi   = aPart1->GetRotatedMomentum().Phi();
+	  Double_t theta = aPart1->GetRotatedMomentum().Theta();
+	  Double_t P     = aPart1->GetRotatedMomentum().Mag();
 
-	UInt_t k = thetanbin;
-	while(1){ 
-	  if( theta >= thetabin[k] ){
-	    itheta = k;
-	    break;
+	  UInt_t k = thetanbin;
+	  while(1){ 
+	    if( theta >= thetabin[k] ){
+	      itheta = k;
+	      break;
+	    }
+	    k--;
 	  }
-	  k--;
+
+	  hbthetaiphi[m]->Fill(theta , phi);	  
+	  hbmtrkiphi[m] ->Fill(mtrack  , phi);	  
+
+	  if(imtrk <= mtrknbin && itheta <= thetanbin) {
+	    flowcorr[imtrk][itheta]->Add(mtrack,phi,theta);
+
+	    aPart1->SetFlattenBinID(imtrk, itheta);
+
+	  }
 	}
-
-	hbthetaiphi[m]->Fill(theta , phi);	  
-	hbmtrkiphi[m] ->Fill(mtrack  , phi);	  
-
-	if(imtrk <= mtrknbin && itheta <= thetanbin) {
-	  flowcorr[imtrk][itheta]->Add(mtrack,phi,theta);
-
-	  aPart1->SetFlattenBinID(imtrk, itheta);
-
-	}
-      }
       
-      //      cflw->Fill();
+	//      cflw->Fill();
+      }
     }
-
     //----------  get corrrection parameters
     for(UInt_t j = 0; j < mtrknbin+1; j++){   
 
       for(UInt_t i = 0; i < thetanbin+1; i++) {   
-
+	
 	UInt_t nphi = flowcorr[j][i]->FourierCorrection();
 	std::cout << " At " << mtrkbin[j] << " : " << thetabin[i] << std::endl;
 
-	if(nphi == 0) {
-	  std::cout << " no data is stored " << std::endl;
-	  continue;
-	}
+	// if(nphi == 0) {
+	//   std::cout << " no data is stored " << std::endl;
+	//   continue;
+	// }
 
 	vector<Int_t>    mtk   = flowcorr[j][i]->GetMTrack();
 	vector<Double_t> aphi  = flowcorr[j][i]->GetCorrectedPhi();

@@ -74,7 +74,7 @@ STParticle::STParticle(const STParticle &cp)
   rDist            = cp.rDist;
   rpocaVertex      = cp.rpocaVertex;
 
-  //  cout << "initi " << fPID << " : " << cp.fPID << endl;
+  //  std::cout << "initi " << fPID << " : " << cp.fPID << endl;
 }
 
 
